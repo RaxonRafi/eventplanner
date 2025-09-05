@@ -53,12 +53,39 @@ model RSVP {
   packageId String?
   status    RSVPStatus    @default(PENDING)
   paid      Boolean       @default(false)
+  @@unique([userId, eventId])         // prevent double booking
+  @@index([eventId, status]) 
   createdAt DateTime      @default(now())
+  Payment Payment[]
+}
+model Payment {
+  id           String         @id @default(cuid())
+  rsvp         RSVP           @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  rsvpId       String
+  amount       Int  
+  currency     String        
+  status       PaymentStatus  @default(UNPAID)
+  tranId       String?        @unique
+  paymentGatewayData String?     
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([rsvpId, status])
+  @@index([tranId])
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
 }
 
 enum Role {
   USER
   ADMIN
+  ORGANIZER
 }
 
 enum RSVPStatus {

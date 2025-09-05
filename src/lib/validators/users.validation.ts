@@ -1,3 +1,4 @@
+import { Role } from "@prisma/client"
 import { z } from "zod"
 
 export const createUserSchema = z.object({
@@ -5,7 +6,7 @@ export const createUserSchema = z.object({
   email: z.email({ message: "Valid email is required" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   image: z.string().optional(),
-  role: z.enum(["USER", "ADMIN"]).default("USER"),
+  role: z.enum([Role.USER, Role.ADMIN,Role.ORGANIZER]).default("USER"),
 })
 
 export const updateUserSchema = createUserSchema.partial()
