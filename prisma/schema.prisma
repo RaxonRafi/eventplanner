@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String?
+  email     String    @unique
+  password  String?
+  image     String?
+  role      Role      @default(USER)
+  events    Event[]   @relation("OrganizerEvents")
+  rsvps     RSVP[]
+  createdAt DateTime  @default(now())
+}
+
+model Event {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  location    String
+  capacity    Int?
+  organizer   User           @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  organizerId String
+  packages    EventPackage[]
+  rsvps       RSVP[]
+  createdAt   DateTime       @default(now())
+}
+
+model EventPackage {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  createdAt DateTime @default(now())
+  rsvps     RSVP[]   @relation("PackageRSVPs")
+}
+
+model RSVP {
+  id        String        @id @default(cuid())
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  event     Event         @relation(fields: [eventId], references: [id])
+  eventId   String
+  package   EventPackage? @relation("PackageRSVPs", fields: [packageId], references: [id])
+  packageId String?
+  status    RSVPStatus    @default(PENDING)
+  paid      Boolean       @default(false)
+  createdAt DateTime      @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum RSVPStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
