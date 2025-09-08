@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { PaymentStatus, RSVPStatus } from "@prisma/client"
 
@@ -5,19 +6,24 @@ import { PaymentStatus, RSVPStatus } from "@prisma/client"
  * FAIL PAYMENT
  * Mark payment failed and (optionally) set RSVP status back to pending/cancelled semantics.
  */
-export async function POST(params: { tranId: string }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ tranId: string }> }
+) {
+  const { tranId } = await params
+
   const payment = await prisma.payment.update({
-    where: { tranId: params.tranId },
+    where: { tranId },
     data: { status: PaymentStatus.FAILED },
     select: { rsvpId: true },
   }).catch(() => null)
 
   if (payment?.rsvpId) {
-    // Keep RSVP PENDING, or set a specific failed state if you add it.
     await prisma.rSVP.update({
       where: { id: payment.rsvpId },
       data: { status: RSVPStatus.PENDING, paid: false },
     }).catch(() => {})
   }
-  return { success: false, message: "Payment Failed" }
+
+  return NextResponse.json({ success: true, message: "Payment Failed" })
 }

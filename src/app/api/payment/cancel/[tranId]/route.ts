@@ -1,13 +1,12 @@
+import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { PaymentStatus, RSVPStatus } from "@prisma/client"
 
-/**
- * CANCEL PAYMENT
- * Mark payment cancelled; keep RSVP pending so the user can try again.
- */
-export async function POST(params: { tranId: string }) {
+export async function POST(request: NextRequest, { params }: { params: { tranId: string } }) {
+  const { tranId } = params
+
   const payment = await prisma.payment.update({
-    where: { tranId: params.tranId },
+    where: { tranId },
     data: { status: PaymentStatus.CANCELLED },
     select: { rsvpId: true },
   }).catch(() => null)
@@ -18,5 +17,6 @@ export async function POST(params: { tranId: string }) {
       data: { status: RSVPStatus.PENDING, paid: false },
     }).catch(() => {})
   }
-  return { success: false, message: "Payment Cancelled" }
+
+  return NextResponse.json({ success: true, message: "Payment Cancelled" })
 }
