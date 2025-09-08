@@ -8,9 +8,9 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { tranId: string } }
+  { params }: { params: Promise<{ tranId: string }> }
 ) {
-  const { tranId } = params;
+  const { tranId } = await params;
 
   const payment = await prisma.payment
     .update({
