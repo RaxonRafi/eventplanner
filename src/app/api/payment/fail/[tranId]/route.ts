@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
-import { PaymentStatus, RSVPStatus } from "@prisma/client"
+import prisma from "@/lib/prisma";
+import { PaymentStatus, RSVPStatus } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * FAIL PAYMENT
@@ -8,22 +8,26 @@ import { PaymentStatus, RSVPStatus } from "@prisma/client"
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ tranId: string }> }
+  { params }: { params: { tranId: string } }
 ) {
-  const { tranId } = await params
+  const { tranId } = params;
 
-  const payment = await prisma.payment.update({
-    where: { tranId },
-    data: { status: PaymentStatus.FAILED },
-    select: { rsvpId: true },
-  }).catch(() => null)
+  const payment = await prisma.payment
+    .update({
+      where: { tranId },
+      data: { status: PaymentStatus.FAILED },
+      select: { rsvpId: true },
+    })
+    .catch(() => null);
 
   if (payment?.rsvpId) {
-    await prisma.rSVP.update({
-      where: { id: payment.rsvpId },
-      data: { status: RSVPStatus.PENDING, paid: false },
-    }).catch(() => {})
+    await prisma.rSVP
+      .update({
+        where: { id: payment.rsvpId },
+        data: { status: RSVPStatus.PENDING, paid: false },
+      })
+      .catch(() => {});
   }
 
-  return NextResponse.json({ success: true, message: "Payment Failed" })
+  return NextResponse.json({ success: true, message: "Payment Failed" });
 }
