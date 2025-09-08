@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
 
 export async function POST(req: Request) {
