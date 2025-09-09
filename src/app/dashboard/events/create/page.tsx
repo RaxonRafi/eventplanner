@@ -1,6 +1,7 @@
 "use client";
 
 import { EventList } from "@/components/Admin/EventList";
+import { CreateEventForm } from "@/components/forms/createEventForm";
 import { OrgEventList } from "@/components/Organizer/OrgEventList";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -21,14 +22,7 @@ const Page = () => {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        {isLoading && <p>Loading...</p>}
-
-        {!isLoading && role === "ADMIN" && <EventList />}
-        {!isLoading && role === "ORGANIZER" && <OrgEventList />}
-
-        {!isLoading && role !== "ADMIN" && role !== "ORGANIZER" && (
-          <p className="text-muted-foreground">You don’t have permission to view this page.</p>
-        )}
+        <CreateEventForm/>
       </div>
     </SidebarInset>
   );

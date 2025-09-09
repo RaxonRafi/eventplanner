@@ -1,37 +1,85 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// app/events/[id]/page.tsx (example)
 "use client";
 import EventDetails from "@/components/EventCard";
-
+import { useEventByIdQuery } from "@/redux/features/Event/event.api";
+import {
+  useCreateRsvpMutation,
+  useMyRsvpsQuery,
+} from "@/redux/features/Reservation/rsvp.api";
+import { useParams } from "next/navigation";
 
 export default function EventPage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id as string;
+  const { data, isLoading, isError } = useEventByIdQuery(id, { skip: !id });
+  const [createRsvp] = useCreateRsvpMutation();
+  const { data: myRsvpData } = useMyRsvpsQuery(
+    { eventId: id, page: 1, limit: 1 },
+    { skip: !id }
+  );
+  const alreadyRsvped = (myRsvpData?.data?.length ?? 0) > 0;
+
+  if (!id) return null;
+  if (isLoading) return <div className="container py-24">Loading…</div>;
+  if (isError)
+    return <div className="container py-24">Failed to load event.</div>;
+  if (!data) return <div className="container py-24">Event not found.</div>;
+
+  const date = new Date(data.date);
+  const dateLabel = date.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
     <EventDetails
       event={{
-        id: "cmf6va0b80001txrckcm5jopb",
-        title: "Tech Innovators Summit 2025",
+        id: data.id,
+        title: data.title,
         coverImage: "/images/about-1.jpg",
-        dateLabel: "Sat, Oct 5, 2025 • 10:00 AM",
-        durationLabel: "6 hours",
-        location: "Dhaka, Bangladesh",
-        capacity: 300,
-        descriptionHtml:
-          "<p>Join founders, PMs and engineers for a day of deep dives on AI, growth and dev tooling.</p><h3>What you'll learn</h3><ul><li>Building AI features</li><li>Efficient product analytics</li><li>Scaling teams</li></ul>",
-        organizer: { id: "org-1", name: "Eventers Team", avatarUrl: "/images/organizer.png" },
-        packages: [
-          { id: "p1", name: "General", price: 1999, description: "Access to all talks" },
-          { id: "p2", name: "VIP", price: 3999, description: "Front row + speaker Q&A" },
-        ],
-        shareLinks: [
-          { platform: "linkedin", href: "https://www.linkedin.com/shareArticle?mini=true&url=https://example.com/events/evt-1" },
-          { platform: "x", href: "https://twitter.com/intent/tweet?url=https://example.com/events/evt-1" },
-        ],
-        venueMapUrl: "https://maps.google.com/?q=Dhaka",
-        guidelinesUrl: "/guidelines",
+        dateLabel,
+        durationLabel: undefined,
+        location: data.location,
+        capacity: data.capacity ?? undefined,
+        descriptionHtml: data.description ?? "",
+        organizer: {
+          id: data.organizer?.id ?? "",
+          name: data.organizer?.name ?? "Organizer",
+        },
+        packages: (data.packages ?? []).map(
+          (p: { id: string; name: string; price: number }) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+          })
+        ),
+        shareLinks: [],
+        venueMapUrl: undefined,
+        guidelinesUrl: undefined,
       }}
-      onSelectPackage={(pkg: any) => {
-        // e.g. open RSVP modal or push(`/rsvp?eventId=...&packageId=...`)
-        console.log("Select package", pkg);
+      onSelectPackage={async (pkg) => {
+        if (alreadyRsvped) {
+          alert("You already have an RSVP for this event.");
+          return;
+        }
+        try {
+          const res = await createRsvp({
+            eventId: data.id,
+            packageId: pkg.id,
+          }).unwrap();
+          const redirectUrl = res?.paymentUrl as string | undefined;
+          if (redirectUrl) window.location.href = redirectUrl;
+        } catch (err: unknown) {
+          const e = err as { status?: number; data?: { error?: string } };
+          if (e?.status === 409) {
+            alert("You already have an RSVP for this event.");
+            return;
+          }
+          alert(e?.data?.error || "Failed to create RSVP");
+        }
       }}
       detailsCtaUrl="/events"
     />

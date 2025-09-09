@@ -44,15 +44,15 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    // Organizer and Admin allowed for events/payments/rsvps management
+    // Organizer and Admin allowed for events/payments management
     if (
       (pathname.startsWith("/dashboard/events") ||
-        pathname.startsWith("/dashboard/payments") ||
-        pathname.startsWith("/dashboard/rsvps")) &&
+        pathname.startsWith("/dashboard/payments")) &&
       !(isAdmin || isOrganizer)
     ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
+    // Note: /dashboard/rsvps is allowed for all logged-in users
   }
 
   return NextResponse.next();

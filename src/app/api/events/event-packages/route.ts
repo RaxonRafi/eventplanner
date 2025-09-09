@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, isOranizer } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
 // POST create event package
 export async function POST(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isAdmin(req) || !isOranizer(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   try {

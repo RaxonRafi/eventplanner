@@ -1,18 +1,24 @@
-import Link from "next/link";
+"use client";
 import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 
 type EventCard = {
   id: string;
   title: string;
   summary: string;
-  date: string;       // ISO or formatted
+  date: string; // ISO or formatted
   location: string;
-  url: string;        // detail page e.g. `/events/[id]`
-  image: string;      // cover image
+  url: string; // detail page e.g. `/events/[id]`
+  image: string; // cover image
 };
 
 interface FeaturedEventsProps {
@@ -24,47 +30,35 @@ interface FeaturedEventsProps {
   events?: EventCard[];
 }
 
+import { usePublicEventsQuery } from "@/redux/features/Event/event.api";
+
 export function FeaturedEvents({
   tagline = "Don’t miss out",
   heading = "Upcoming Events",
   description = "Here are a few highlights coming up soon. Explore all events for more.",
   buttonText = "View all events",
   buttonUrl = "/events",
-  events = [
-    {
-      id: "cmf6va0b80001txrckcm5jopb",
-      title: "Tech Innovators Summit 2025",
-      summary:
-        "A full-day summit on AI, product growth, and developer tooling with hands-on sessions.",
-      date: "2025-10-05",
-      location: "Dhaka, Bangladesh",
-      url: "/events/cmf6va0b80001txrckcm5jopb",
-      image: "/images/about-1.jpg",
-    },
-    {
-      id: "cmf6va0b80001txrckcm5jopbfd",
-      title: "Design & UX Conf",
-      summary:
-        "Learn modern UX patterns, design systems, and accessibility from industry leaders.",
-      date: "2025-11-12",
-      location: "Chattogram, Bangladesh",
-      url: "/events/evt-2",
-      image: "/images/about-1.jpg",
-    },
-    {
-      id: "cmf6va0b80001txrckcm5jopbf",
-      title: "Startup Founders Meetup",
-      summary:
-        "Early-stage founders meet investors, share stories, and find collaborators.",
-      date: "2025-12-02",
-      location: "Sylhet, Bangladesh",
-      url: "/events/evt-3",
-      image: "/images/about-1.jpg",
-    },
-    // ...more events (will show only first 3)
-  ],
+  events,
 }: FeaturedEventsProps) {
-  const items = events.slice(0, 3);
+  const { data } = usePublicEventsQuery({ page: 1, limit: 3 });
+  const apiItems = (data?.data ?? []).map(
+    (e: {
+      id: string;
+      title: string;
+      description: string | null;
+      date: string;
+      location: string;
+    }) => ({
+      id: e.id,
+      title: e.title,
+      summary: e.description ?? "",
+      date: new Date(e.date).toISOString().slice(0, 10),
+      location: e.location,
+      url: `/events/${e.id}`,
+      image: "/images/about-1.jpg",
+    })
+  );
+  const items = events ?? apiItems;
 
   return (
     <section className="py-32">
@@ -88,8 +82,11 @@ export function FeaturedEvents({
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-          {items.map((evt) => (
-            <Card key={evt.id} className="grid grid-rows-[auto_auto_1fr_auto] pt-0">
+          {items.map((evt: EventCard) => (
+            <Card
+              key={evt.id}
+              className="grid grid-rows-[auto_auto_1fr_auto] pt-0"
+            >
               <div className="aspect-16/9 w-full">
                 <Link
                   href={evt.url}
@@ -124,7 +121,10 @@ export function FeaturedEvents({
               </CardContent>
 
               <CardFooter>
-                <Link href={evt.url} className="flex items-center hover:underline">
+                <Link
+                  href={evt.url}
+                  className="flex items-center hover:underline"
+                >
                   View details
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
