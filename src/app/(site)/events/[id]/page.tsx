@@ -74,6 +74,10 @@ export default function EventPage() {
           if (redirectUrl) window.location.href = redirectUrl;
         } catch (err: unknown) {
           const e = err as { status?: number; data?: { error?: string } };
+          if (e?.status === 401) {
+            window.location.href = `/login?redirect=/events/${data.id}`;
+            return;
+          }
           if (e?.status === 409) {
             alert("You already have an RSVP for this event.");
             return;
