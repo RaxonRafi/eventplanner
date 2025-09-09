@@ -27,23 +27,28 @@ import { useState } from "react";
 export function RsvpList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
-  const { data: me, isLoading: meLoading } = useUserInfoQuery(undefined);
+  const {
+    data: me,
+    isLoading: meLoading,
+    isError: meError,
+  } = useUserInfoQuery(undefined);
   const role = me?.role as string | undefined;
   const isUser = role === "USER";
-  const roleUnknown = !role;
+  const roleKnown = Boolean(role) || meError; // consider role unknown only while loading
 
+  // When role is unknown (after meLoading=false), default to "my RSVPs"
   const allQ = useAllRsvpQuery(
     { page: currentPage, limit },
-    { skip: roleUnknown || isUser }
+    { skip: meLoading || !role || isUser }
   );
   const myQ = useMyRsvpsQuery(
     { page: currentPage, limit },
-    { skip: roleUnknown || !isUser }
+    { skip: meLoading || (!!role && !isUser) ? true : false }
   );
 
-  const active = isUser ? myQ : allQ;
+  const active = isUser || !roleKnown ? myQ : allQ;
   const data = active.data;
-  const isLoading = meLoading || active.isLoading || roleUnknown;
+  const isLoading = meLoading || active.isLoading;
   const isError = active.isError;
 
   const rsvps = data?.data || [];
