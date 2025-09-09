@@ -24,9 +24,9 @@ import {
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
+import React from "react";
 import Logo from "../../public/svg/Logo";
 import { ModeToggle } from "./ui/modeToggle";
-import React from "react";
 
 const Navbar = () => {
   const { data } = useUserInfoQuery(undefined);
