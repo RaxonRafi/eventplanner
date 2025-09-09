@@ -26,10 +26,13 @@ import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import Logo from "../../public/svg/Logo";
 import { ModeToggle } from "./ui/modeToggle";
+import React from "react";
 
 const Navbar = () => {
   const { data } = useUserInfoQuery(undefined);
-  const isLoggedIn = !!data?.data?.email;
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const isLoggedIn = mounted && !!data?.data?.email;
   const features = [
     {
       title: "Dashboard",
@@ -93,15 +96,16 @@ const Navbar = () => {
           </NavigationMenu>
 
           <div className="hidden items-center gap-4 lg:flex">
-            {isLoggedIn ? (
-              <Link href="/dashboard">
-                <Button>Dashboard</Button>
-              </Link>
-            ) : (
-              <Link href="/login">
-                <Button>Sign in</Button>
-              </Link>
-            )}
+            {mounted &&
+              (isLoggedIn ? (
+                <Link href="/dashboard">
+                  <Button>Dashboard</Button>
+                </Link>
+              ) : (
+                <Link href="/login">
+                  <Button>Sign in</Button>
+                </Link>
+              ))}
             <ModeToggle />
           </div>
 
@@ -163,15 +167,16 @@ const Navbar = () => {
                 </div>
 
                 <div className="mt-6 flex flex-col gap-4">
-                  {isLoggedIn ? (
-                    <Link href="/dashboard">
-                      <Button>Dashboard</Button>
-                    </Link>
-                  ) : (
-                    <Link href="/login">
-                      <Button variant="outline">Sign in</Button>
-                    </Link>
-                  )}
+                  {mounted &&
+                    (isLoggedIn ? (
+                      <Link href="/dashboard">
+                        <Button>Dashboard</Button>
+                      </Link>
+                    ) : (
+                      <Link href="/login">
+                        <Button variant="outline">Sign in</Button>
+                      </Link>
+                    ))}
                 </div>
               </div>
             </SheetContent>
