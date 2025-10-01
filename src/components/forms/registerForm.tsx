@@ -183,7 +183,7 @@ export function RegisterForm({
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={isLoading}>
             Submit
           </Button>
           <div className="text-center text-sm">

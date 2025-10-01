@@ -116,14 +116,22 @@ export const CardItem = ({
   rotateX?: number | string;
   rotateY?: number | string;
   rotateZ?: number | string;
-  [key: string]: any;
+  [key: string]: string | number | React.ReactNode | undefined;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isMouseEntered] = useMouseEnter();
 
   useEffect(() => {
     handleAnimations();
-  }, [isMouseEntered]);
+  }, [
+    isMouseEntered,
+    translateX,
+    translateY,
+    translateZ,
+    rotateX,
+    rotateY,
+    rotateZ,
+  ]);
 
   const handleAnimations = () => {
     if (!ref.current) return;
