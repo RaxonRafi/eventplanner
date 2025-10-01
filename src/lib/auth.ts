@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Role, User } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import prisma from "./prisma";
@@ -6,8 +5,8 @@ import prisma from "./prisma";
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
 
 export type JwtPayload = {
-  id: string;         // user id
-  role: Role;         // "ADMIN" | "ORGANIZER" | "USER"
+  id: string; // user id
+  role: Role; // "ADMIN" | "ORGANIZER" | "USER"
   // add other claims if you include them
 };
 

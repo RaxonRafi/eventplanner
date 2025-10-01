@@ -1,32 +1,36 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import prisma from "@/lib/prisma"
-import axios from "axios"
+import prisma from "@/lib/prisma";
+import axios from "axios";
 
 // Support both naming styles to avoid .env mismatches
-const MODE = process.env.SSLCZ_MODE || process.env.SSL_MODE || "sandbox"
+const MODE = process.env.SSLCZ_MODE || process.env.SSL_MODE || "sandbox";
 const SSL_BASE =
   MODE === "live"
     ? "https://securepay.sslcommerz.com"
-    : "https://sandbox.sslcommerz.com"
+    : "https://sandbox.sslcommerz.com";
 
-const STORE_ID   = process.env.SSL_STORE_ID
-const STORE_PASS =  process.env.SSL_STORE_PASS
+const STORE_ID = process.env.SSL_STORE_ID;
+const STORE_PASS = process.env.SSL_STORE_PASS;
 
-const SUCCESS_BACKEND_URL = process.env.SSL_SUCCESS_BACKEND_URL || "http://localhost:3000/api/payments/return"
-const FAIL_BACKEND_URL    = process.env.SSL_FAIL_BACKEND_URL    || "http://localhost:3000/api/payments/return"
-const CANCEL_BACKEND_URL  = process.env.SSL_CANCEL_BACKEND_URL  || "http://localhost:3000/api/payments/return"
-const IPN_URL             = process.env.SSL_IPN_URL || ""
+const SUCCESS_BACKEND_URL =
+  process.env.SSL_SUCCESS_BACKEND_URL ||
+  "http://localhost:3000/api/payments/return";
+const FAIL_BACKEND_URL =
+  process.env.SSL_FAIL_BACKEND_URL ||
+  "http://localhost:3000/api/payments/return";
+const CANCEL_BACKEND_URL =
+  process.env.SSL_CANCEL_BACKEND_URL ||
+  "http://localhost:3000/api/payments/return";
+const IPN_URL = process.env.SSL_IPN_URL || "";
 
 function toTwoDecimals(n: number) {
-  return (Math.round(n * 100) / 100).toFixed(2) // "199.00"
+  return (Math.round(n * 100) / 100).toFixed(2); // "199.00"
 }
 
 export interface ISSLCommerz {
-  amount: number // BDT, e.g. 199.00 (NOT paisa)
-  transactionId: string
-  name: string
-  email: string
+  amount: number; // BDT, e.g. 199.00 (NOT paisa)
+  transactionId: string;
+  name: string;
+  email: string;
 }
 
 export const SSLService = {
@@ -36,7 +40,7 @@ export const SSLService = {
    */
   async sslPaymentInit(payload: ISSLCommerz) {
     if (!STORE_ID || !STORE_PASS) {
-      throw new Error("Missing SSLCOMMERZ credentials (STORE_ID / STORE_PASS)")
+      throw new Error("Missing SSLCOMMERZ credentials (STORE_ID / STORE_PASS)");
     }
 
     // Build x-www-form-urlencoded body
@@ -47,9 +51,15 @@ export const SSLService = {
       currency: "BDT",
       tran_id: payload.transactionId,
 
-      success_url: `${SUCCESS_BACKEND_URL}?tran_id=${encodeURIComponent(payload.transactionId)}`,
-      fail_url:    `${FAIL_BACKEND_URL}?tran_id=${encodeURIComponent(payload.transactionId)}`,
-      cancel_url:  `${CANCEL_BACKEND_URL}?tran_id=${encodeURIComponent(payload.transactionId)}`,
+      success_url: `${SUCCESS_BACKEND_URL}?tran_id=${encodeURIComponent(
+        payload.transactionId
+      )}`,
+      fail_url: `${FAIL_BACKEND_URL}?tran_id=${encodeURIComponent(
+        payload.transactionId
+      )}`,
+      cancel_url: `${CANCEL_BACKEND_URL}?tran_id=${encodeURIComponent(
+        payload.transactionId
+      )}`,
       ...(IPN_URL ? { ipn_url: IPN_URL } : {}),
 
       shipping_method: "NO",
@@ -63,23 +73,23 @@ export const SSLService = {
       cus_city: "Dhaka",
       cus_country: "Bangladesh",
       cus_phone: "01700000000",
-    })
+    });
 
     // Always use gateway base, not a custom env URL
-    const url = `${SSL_BASE}/gwprocess/v3/api.php`
+    const url = `${SSL_BASE}/gwprocess/v3/api.php`;
 
     const res = await axios.post(url, form.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       // timeout: 10000,
-    })
+    });
 
-    const data = res.data || {}
+    const data = res.data || {};
     if (data.status !== "SUCCESS" || !data.GatewayPageURL) {
-      const reason = data.failedreason || "Invalid Information"
-      throw new Error(`SSLC init error: ${reason}`)
+      const reason = data.failedreason || "Invalid Information";
+      throw new Error(`SSLC init error: ${reason}`);
     }
 
-    return { GatewayPageURL: data.GatewayPageURL as string, raw: data }
+    return { GatewayPageURL: data.GatewayPageURL as string, raw: data };
   },
 
   /**
@@ -91,28 +101,32 @@ export const SSLService = {
    */
   async validatePayment({ valId, tranId }: { valId: string; tranId: string }) {
     if (!STORE_ID || !STORE_PASS) {
-      throw new Error("Missing SSLCOMMERZ credentials")
+      throw new Error("Missing SSLCOMMERZ credentials");
     }
 
-    const validateURL = `${SSL_BASE}/validator/api/validationserverAPI.php`
-    const url = `${validateURL}?val_id=${encodeURIComponent(valId)}&store_id=${encodeURIComponent(
+    const validateURL = `${SSL_BASE}/validator/api/validationserverAPI.php`;
+    const url = `${validateURL}?val_id=${encodeURIComponent(
+      valId
+    )}&store_id=${encodeURIComponent(
       STORE_ID
-    )}&store_passwd=${encodeURIComponent(STORE_PASS)}&format=json&v=1`
+    )}&store_passwd=${encodeURIComponent(STORE_PASS)}&format=json&v=1`;
 
-    const res = await axios.get(url /* , { timeout: 10000 } */)
-    const vData = res.data || {}
+    const res = await axios.get(url /* , { timeout: 10000 } */);
+    const vData = res.data || {};
 
-    const isOK = vData.status === "VALID" || vData.status === "VALIDATED"
+    const isOK = vData.status === "VALID" || vData.status === "VALIDATED";
 
     if (!isOK) {
-      await prisma.payment.update({
-        where: { tranId },
-        data: {
-          status: "FAILED",
-          paymentGatewayData: JSON.stringify(vData),
-        },
-      }).catch(() => {})
-      return { ok: false as const, vData }
+      await prisma.payment
+        .update({
+          where: { tranId },
+          data: {
+            status: "FAILED",
+            paymentGatewayData: JSON.stringify(vData),
+          },
+        })
+        .catch(() => {});
+      return { ok: false as const, vData };
     }
 
     // Mark PAID and confirm RSVP in one transaction
@@ -124,14 +138,14 @@ export const SSLService = {
           paymentGatewayData: JSON.stringify(vData),
         },
         select: { rsvpId: true },
-      })
+      });
 
       await tx.rSVP.update({
         where: { id: payment.rsvpId },
         data: { status: "CONFIRMED", paid: true },
-      })
-    })
+      });
+    });
 
-    return { ok: true as const, vData }
+    return { ok: true as const, vData };
   },
-}
+};
