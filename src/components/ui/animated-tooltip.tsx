@@ -7,7 +7,7 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import Image from "next/image";
+import Image, { StaticImageData } from "next/image";
 import React, { useRef, useState } from "react";
 
 export const AnimatedTooltip = ({
@@ -17,7 +17,7 @@ export const AnimatedTooltip = ({
     id: number;
     name: string;
     designation: string;
-    image: string;
+    image: string | StaticImageData;
   }[];
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -41,12 +41,24 @@ export const AnimatedTooltip = ({
       cancelAnimationFrame(animationFrameRef.current);
     }
 
+    // Compute values synchronously to avoid accessing a pooled event inside RAF
+    const { left, width } = event.currentTarget.getBoundingClientRect();
+    const localX = event.clientX - left;
+    const nextX = localX - width / 2;
+
     animationFrameRef.current = requestAnimationFrame(() => {
-      const target = event.currentTarget;
-      const halfWidth = target.offsetWidth / 2;
-      x.set(event.nativeEvent.offsetX - halfWidth);
+      x.set(nextX);
     });
   };
+
+  React.useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <>
