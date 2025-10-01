@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useEffect, useRef, useState, memo } from "react";
-import { motion } from "motion/react";
-import { twMerge } from "tailwind-merge";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import React, { memo, useEffect, useRef, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export const TextRevealCard = ({
   text,

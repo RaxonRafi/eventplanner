@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 
-import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 type Direction = "TOP" | "LEFT" | "BOTTOM" | "RIGHT";
 
