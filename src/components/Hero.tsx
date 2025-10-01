@@ -1,11 +1,12 @@
 
+import { cn } from "@/lib/utils";
 import { Star } from "lucide-react";
-import React from "react";
+import Link from "next/link";
+import { Avatar, AvatarImage } from "./ui/avatar";
+import { Button } from "./ui/button";
+import { Spotlight } from "./ui/spotlight";
 
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-
-interface Hero7Props {
+interface HeroProps {
   heading?: string;
   description?: string;
   button?: {
@@ -22,7 +23,7 @@ interface Hero7Props {
   };
 }
 
-const Hero = ({
+export function Hero({
   heading = "Plan and Manage Your Events Seamlessly",
   description = "Eventers helps you create, organize, and track your events with ease. From RSVPs to payments, manage everything in one place.",
   button = {
@@ -55,19 +56,60 @@ const Hero = ({
       },
     ],
   },
-}: Hero7Props) => {
+}: HeroProps) {
   return (
-    <section className="py-32">
-      <div className="container text-center">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6">
-          <h1 className="text-3xl font-extrabold lg:text-6xl">{heading}</h1>
-          <p className="text-muted-foreground text-balance lg:text-lg">
+    <div className="relative flex h-[40rem] w-full overflow-hidden rounded-md bg-black/[0.96] antialiased md:items-center md:justify-center">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 [background-size:40px_40px] select-none",
+          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
+        )}
+      />
+
+      <Spotlight
+        className="-top-40 left-0 md:-top-20 md:left-60"
+        fill="white"
+      />
+      <div className="relative z-10 mx-auto w-full max-w-7xl p-4 pt-20 md:pt-0">
+        <div className="mx-auto flex max-w-5xl flex-col gap-6 text-center">
+          <h1 className="bg-opacity-50 bg-gradient-to-b from-neutral-50 to-neutral-400 bg-clip-text text-4xl font-bold text-transparent md:text-7xl">
+            {heading}
+          </h1>
+          <p className="mx-auto max-w-lg text-base font-normal text-neutral-300">
             {description}
           </p>
         </div>
-        <Button asChild size="lg" className="mt-10">
-          <a href={button.url}>{button.text}</a>
-        </Button>
+
+        <div className="mt-10 flex justify-center">
+          {/* <Button asChild size="lg">
+            <Link href={button.url}>{button.text}</Link>
+          </Button> */}
+          <button className="bg-slate-800 no-underline group cursor-pointer relative shadow-2xl shadow-zinc-900 rounded-full p-px text-xs font-semibold leading-6  text-white inline-block">
+        <span className="absolute inset-0 overflow-hidden rounded-full">
+          <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(56,189,248,0.6)_0%,rgba(56,189,248,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
+        </span>
+        <div className="relative flex space-x-2 items-center z-10 rounded-full bg-zinc-950 py-0.5 px-4 ring-1 ring-white/10 ">
+          <Link href={button.url}>{button.text}</Link>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M10.75 8.75L14.25 12L10.75 15.25"
+            ></path>
+          </svg>
+        </div>
+        <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-emerald-400/0 via-emerald-400/90 to-emerald-400/0 transition-opacity duration-500 group-hover:opacity-40"></span>
+      </button>
+        </div>
+
         <div className="mx-auto mt-10 flex w-fit flex-col items-center gap-4 sm:flex-row">
           <span className="mx-4 inline-flex items-center -space-x-4">
             {reviews.avatars.map((avatar, index) => (
@@ -84,18 +126,16 @@ const Hero = ({
                   className="size-5 fill-yellow-400 text-yellow-400"
                 />
               ))}
-              <span className="mr-1 font-semibold">
+              <span className="mr-1 font-semibold text-white">
                 {reviews.rating?.toFixed(1)}
               </span>
             </div>
-            <p className="text-muted-foreground text-left font-medium">
+            <p className="text-left font-medium text-neutral-300">
               trusted by {reviews.count}+ event organizers
             </p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
-};
-
-export { Hero };
+}

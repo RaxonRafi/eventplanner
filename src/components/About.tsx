@@ -1,122 +1,181 @@
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Button } from "@/components/ui/button";
-import Logo from "../../public/svg/Logo";
+"use client";
+import React, { useEffect } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { WobbleCard } from "@/components/ui/wobble-card";
+import { cn } from "@/lib/utils";
 
 
-interface About3Props {
+
+interface CountUpProps {
+  endValue: string;
+  duration?: number;
+}
+
+const CountUp = ({ endValue, duration = 2.5 }: CountUpProps) => {
+
+  const endNumber = parseFloat(endValue.replace(/[^\d.]/g, ''));
+
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, latest => {
+    
+    const displayValue = latest;
+
+    if (endValue.includes('/5')) {
+
+      return displayValue.toFixed(1) + '/5';
+    }
+    
+    if (endValue.includes('k')) {
+ 
+      const thousands = Math.round(displayValue / 1000);
+      return thousands.toLocaleString() + 'k+';
+    }
+
+    if (endValue.includes('+')) {
+
+        return Math.floor(displayValue).toLocaleString() + '+';
+    }
+
+    return Math.round(displayValue).toLocaleString();
+  });
+
+  useEffect(() => {
+    const controls = animate(count, endNumber, { duration });
+    return () => controls.stop();
+  }, [count, endNumber, duration]);
+
+  return <motion.span>{rounded}</motion.span>;
+};
+
+
+interface AboutProps {
   title?: string;
   description?: string;
-  mainImage?: { src: string; alt: string };
-  secondaryImage?: { src: string; alt: string };
-  breakout?: {
-    src: string;
-    alt: string;
-    title?: string;
-    description?: string;
-    buttonText?: string;
-    buttonUrl?: string;
-  };
-  companiesTitle?: string;
-  companies?: Array<{ src: string; alt: string }>;
   achievementsTitle?: string;
   achievementsDescription?: string;
   achievements?: Array<{ label: string; value: string }>;
 }
 
-const defaultCompanies = [
-  { src: "/logos/partner-1.svg", alt: "VenuePro" },
-  { src: "/logos/partner-2.svg", alt: "Caterly" },
-  { src: "/logos/partner-3.svg", alt: "StageCraft" },
-  { src: "/logos/partner-4.svg", alt: "TicketWave" },
-  { src: "/logos/partner-5.svg", alt: "LightBox" },
-  { src: "/logos/partner-6.svg", alt: "SoundHub" },
-];
-
 const defaultAchievements = [
   { label: "Events Managed", value: "1,200+" },
-  { label: "RSVPs Processed", value: "250k+" },
+  { label: "RSVPs Processed", value: "25000+" },
   { label: "Avg. Satisfaction", value: "4.9/5" },
   { label: "Vendors Onboarded", value: "350+" },
 ];
 
 const About = ({
   title = "About Eventers",
-  description = "Eventers is the all-in-one platform for planning and managing events—from conferences and workshops to festivals and private celebrations. Create events, publish packages, collect RSVPs and payments, and track everything in one place.",
-  mainImage = {
-    src: "/images/about-1.jpg",
-    alt: "People enjoying a well organized event",
-  },
-  secondaryImage = {
-    src: "/images/about-2.jpg",
-    alt: "Backstage coordination at an event",
-  },
-  breakout = {
-      title: "Made for Organizers, Loved by Guests",
-      description: "Build beautiful event pages, manage capacity, offer tiered packages, and accept secure payments via SSLCommerz with real-time status updates.",
-      buttonText: "Create your first event",
-      buttonUrl: "/events/new",
-      src: "",
-      alt: ""
-  },
-  companiesTitle = "Trusted by teams, venues & creators",
-  companies = defaultCompanies,
+  description = "Eventers is the all-in-one platform for planning and managing events—from conferences and workshops to festivals and private celebrations.",
   achievementsTitle = "Our Impact in Numbers",
-  achievementsDescription =
-    "We focus on reliability, seamless guest experiences, and tools that help organizers scale without the chaos.",
+  achievementsDescription = "We focus on reliability, seamless guest experiences, and tools that help organizers scale without the chaos.",
   achievements = defaultAchievements,
-}: About3Props = {}) => {
+}: AboutProps = {}) => {
   return (
-    <section className="py-32">
-      <div className="container mx-auto px-10">
-        <div className="mb-14 grid gap-5 text-center md:grid-cols-2 md:text-left">
-          <h1 className="text-5xl font-semibold">{title}</h1>
-          <p className="text-muted-foreground">{description}</p>
+    <section className="relative min-h-screen bg-black py-32">
+      {/* background grid */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 select-none",
+          "[background-size:40px_40px]",
+          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
+        )}
+      />
+
+      <div className="relative z-10 container mx-auto px-6">
+        {/* heading */}
+        <div className="mb-16 text-center max-w-3xl mx-auto">
+          <h2 className="bg-gradient-to-b from-neutral-50 to-neutral-400 bg-clip-text text-4xl md:text-6xl font-bold text-transparent">
+            {title}
+          </h2>
+          <p className="mt-4 text-lg text-neutral-300">{description}</p>
         </div>
 
-        <div className="grid gap-7 lg:grid-cols-3">
-          <img
-            src={mainImage.src}
-            alt={mainImage.alt}
-            className="size-full max-h-[620px] rounded-xl object-cover lg:col-span-2"
-          />
-
-          <div className="flex flex-col gap-7 md:flex-row lg:flex-col">
-            <div className="flex flex-col justify-between gap-6 rounded-xl bg-muted p-7 md:w-1/2 lg:w-auto">
-              <Logo/>
-              <div>
-                <p className="mb-2 text-lg font-semibold">{breakout.title}</p>
-                <p className="text-muted-foreground">{breakout.description}</p>
-              </div>
-              <Button variant="outline" className="mr-auto" asChild>
-                <a href={breakout.buttonUrl}>{breakout.buttonText}</a>
-              </Button>
+        {/* Wobble Card Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full overflow-hidden">
+          {/* Card 1: Main Image Background */}
+          <WobbleCard
+            containerClassName="col-span-1 lg:col-span-2 h-full min-h-[400px] lg:min-h-[300px] overflow-hidden relative"
+            className="bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: "url('/images/about-1.jpg')" }}
+          >
+            <div className="absolute inset-0 bg-black/50 rounded-2xl"></div>
+            <div className="max-w-xs z-10 relative p-6">
+              <h2 className="text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
+                Eventers powers the entire event universe
+              </h2>
+              <p className="mt-4 text-left text-base/6 text-neutral-200">
+                With over 1,200+ events managed and 250k+ RSVPs processed,
+                Eventers is the most popular event management platform for
+                organizers.
+              </p>
             </div>
+          </WobbleCard>
 
-            <img
-              src={secondaryImage.src}
-              alt={secondaryImage.alt}
-              className="grow basis-0 rounded-xl object-cover md:w-1/2 lg:min-h-0 lg:w-auto"
-            />
-          </div>
+          {/* Card 2: No Image Background */}
+          <WobbleCard containerClassName="col-span-1 min-h-[300px] overflow-hidden relative bg-indigo-700 rounded-2xl">
+            <div className="z-10 relative p-6">
+              <h2 className="max-w-80 text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
+                Made for Organizers, Loved by Guests
+              </h2>
+              <p className="mt-4 max-w-[26rem] text-left text-base/6 text-neutral-200">
+                Build beautiful event pages, manage capacity, offer tiered
+                packages, and accept secure payments.
+              </p>
+            </div>
+          </WobbleCard>
+
+          {/* Card 3: Secondary Image Background */}
+          <WobbleCard
+            containerClassName="col-span-1 lg:col-span-3 min-h-[400px] lg:min-h-[300px] overflow-hidden relative"
+            className="bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: "url('/images/about-2.jpg')" }}
+          >
+            <div className="absolute inset-0 bg-black/50 rounded-2xl"></div>
+            <div className="max-w-sm z-10 relative p-6">
+              <h2 className="max-w-sm md:max-w-lg text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
+                Create your first event today!
+              </h2>
+              <p className="mt-4 max-w-[26rem] text-left text-base/6 text-neutral-200">
+                Join thousands of event organizers who trust Eventers to make
+                their events unforgettable.
+              </p>
+            </div>
+          </WobbleCard>
         </div>
+        {/* End Wobble Card Layout */}
 
-        <div className="relative overflow-hidden rounded-xl bg-muted p-10 md:p-16 mt-32">
-          <div className="flex flex-col gap-4 text-center md:text-left">
-            <h2 className="text-4xl font-semibold">{achievementsTitle}</h2>
-            <p className="max-w-xl text-muted-foreground">{achievementsDescription}</p>
-          </div>
+        {/* achievements (Cleaned up, no EvervaultCard) */}
+        <div className="mt-32 w-full">
+            {/* Original achievements div restored */}
+            <div className="relative overflow-hidden rounded-xl bg-black/50 p-10 md:p-16 shadow-xl border border-neutral-800">
+                
+                {/* Content */}
+                <div className="relative z-10">
+                    <div className="text-center md:text-left">
+                        <h3 className="text-3xl md:text-5xl font-bold text-white">
+                            {achievementsTitle}
+                        </h3>
+                        <p className="mt-4 max-w-xl text-neutral-400">
+                            {achievementsDescription}
+                        </p>
+                    </div>
 
-          <div className="mt-10 flex flex-wrap justify-between gap-10 text-center">
-            {achievements.map((item, idx) => (
-              <div className="flex flex-col gap-4" key={item.label + idx}>
-                <p>{item.label}</p>
-                <span className="text-4xl font-semibold md:text-5xl">{item.value}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="pointer-events-none absolute -top-1 right-1 z-10 hidden h-full w-full bg-[linear-gradient(to_right,hsl(var(--muted-foreground))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--muted-foreground))_1px,transparent_1px)] [mask-image:linear-gradient(to_bottom_right,#000,transparent,transparent)] bg-[size:80px_80px] opacity-15 md:block"></div>
+                    <div className="mt-12 flex flex-wrap justify-center md:justify-between gap-12">
+                        {achievements.map((item, idx) => (
+                            <div
+                                key={item.label + idx}
+                                className="flex flex-col gap-2 text-center"
+                            >
+                                <span className="text-4xl md:text-5xl font-bold text-white">
+                                    {/* Using Framer Motion CountUp component */}
+                                    <CountUp endValue={item.value} />
+                                </span>
+                                <p className="text-neutral-400">{item.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
     </section>

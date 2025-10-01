@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import React from "react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
 import Logo from "../../public/svg/Logo";
@@ -72,17 +73,24 @@ const Footer = ({
   sections = defaultSections,
   description = "A collection of components for your startup business or side project.",
   socialLinks = defaultSocialLinks,
-  copyright = "© 2024 Shadcnblocks.com. All rights reserved.",
+  copyright = "© 2025 muhammadrafi.vercel.app. All rights reserved.",
   legalLinks = defaultLegalLinks,
 }: Footer7Props) => {
   return (
-    <section >
-      <div className="container mx-auto px-10">
+    <section className="relative bg-black">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 select-none",
+          "[background-size:40px_40px]",
+          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
+        )}
+      />
+      <div className="container mx-auto px-10 lg:px-16 relative z-10">
         <div className="flex w-full flex-col justify-between gap-10 lg:flex-row lg:items-start lg:text-left">
           <div className="flex w-full flex-col justify-between gap-6 lg:items-start">
             {/* Logo */}
             <div className="flex items-center gap-2 lg:justify-start">
-                <Logo/>
+              <Logo />
               <h2 className="text-xl font-semibold">Eventers</h2>
             </div>
             <p className="text-muted-foreground max-w-[70%] text-sm">

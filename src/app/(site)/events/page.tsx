@@ -1,11 +1,6 @@
 "use client";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { EventPreview, EventPreviewCard } from "@/components/EventPreviewCard";
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import {
   Pagination,
   PaginationContent,
@@ -15,8 +10,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { usePublicEventsQuery } from "@/redux/features/Event/event.api";
-import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 type PublicEvent = {
@@ -36,12 +29,18 @@ export default function EventsPage() {
   const totalPages: number = data?.meta?.totalPages ?? 1;
 
   return (
-    <section className="py-24">
-      <div className="container mx-auto px-4 lg:px-16">
-        <div className="mb-10 text-center">
-          <Badge variant="secondary" className="mb-4">
-            All events
-          </Badge>
+    <section className="relative min-h-screen bg-black py-24">
+      <div className="pointer-events-none absolute inset-0 select-none [background-size:40px_40px] [background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]" />
+      <div className="container relative z-10 mx-auto px-4 lg:px-16">
+        <div className="mb-10 text-center flex flex-col items-center">
+          <div className="mb-4 flex justify-center">
+            <HoverBorderGradient
+              containerClassName="rounded-full"
+              className="dark:bg-black bg-white text-black dark:text-white"
+            >
+              <span> All events</span>
+            </HoverBorderGradient>
+          </div>
           <h1 className="text-3xl font-semibold md:text-4xl">Browse events</h1>
           <p className="text-muted-foreground mt-2">
             Discover and RSVP to upcoming events.
@@ -58,54 +57,18 @@ export default function EventsPage() {
                 No events found.
               </div>
             ) : (
-              events.map((evt) => (
-                <Card
-                  key={evt.id}
-                  className="grid grid-rows-[auto_auto_1fr_auto] pt-0"
-                >
-                  <div className="aspect-16/9 w-full">
-                    <Link
-                      href={`/events/${evt.id}`}
-                      className="transition-opacity duration-200 fade-in hover:opacity-75"
-                    >
-                      <img
-                        src="/images/about-1.jpg"
-                        alt={evt.title}
-                        className="h-full w-full object-cover object-center rounded-t-lg"
-                      />
-                    </Link>
-                  </div>
-                  <CardHeader>
-                    <h3 className="text-lg font-semibold hover:underline md:text-xl">
-                      <Link href={`/events/${evt.id}`}>{evt.title}</Link>
-                    </h3>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-2">
-                        <CalendarDays className="size-4" />
-                        {new Date(evt.date).toISOString().slice(0, 10)}
-                      </span>
-                      <span className="inline-flex items-center gap-2">
-                        <MapPin className="size-4" />
-                        {evt.location}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground line-clamp-3">
-                      {evt.description ?? ""}
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <Link
-                      href={`/events/${evt.id}`}
-                      className="flex items-center hover:underline"
-                    >
-                      View details
-                      <ArrowRight className="ml-2 size-4" />
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))
+              events.map((evt) => {
+                const item: EventPreview = {
+                  id: evt.id,
+                  title: evt.title,
+                  summary: evt.description ?? "",
+                  date: new Date(evt.date).toISOString().slice(0, 10),
+                  location: evt.location,
+                  url: `/events/${evt.id}`,
+                  image: "/images/about-1.jpg",
+                };
+                return <EventPreviewCard key={item.id} evt={item} />;
+              })
             )}
           </div>
         )}

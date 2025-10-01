@@ -1,25 +1,11 @@
 "use client";
-import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
+import { EventPreview, EventPreviewCard } from "@/components/EventPreviewCard";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
 
-type EventCard = {
-  id: string;
-  title: string;
-  summary: string;
-  date: string; // ISO or formatted
-  location: string;
-  url: string; // detail page e.g. `/events/[id]`
-  image: string; // cover image
-};
+type EventCard = EventPreview;
 
 interface FeaturedEventsProps {
   tagline?: string;
@@ -30,7 +16,9 @@ interface FeaturedEventsProps {
   events?: EventCard[];
 }
 
+import { cn } from "@/lib/utils";
 import { usePublicEventsQuery } from "@/redux/features/Event/event.api";
+import { HoverBorderGradient } from "./ui/hover-border-gradient";
 
 export function FeaturedEvents({
   tagline = "Don’t miss out",
@@ -61,12 +49,25 @@ export function FeaturedEvents({
   const items = events ?? apiItems;
 
   return (
-    <section className="py-32">
-      <div className="container mx-auto flex flex-col items-center gap-16 lg:px-16">
+    <section className="relative min-h-screen bg-black py-32">
+      {/* background grid */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 select-none",
+          "[background-size:40px_40px]",
+          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
+        )}
+      />
+      <div className="container mx-auto z-10 relative flex flex-col items-center gap-16 lg:px-16">
         <div className="text-center">
-          <Badge variant="secondary" className="mb-6">
-            {tagline}
-          </Badge>
+          <div className="mb-6 flex justify-center text-center">
+            <HoverBorderGradient
+              containerClassName="rounded-full"
+              className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
+            >
+              <span>{tagline}</span>
+            </HoverBorderGradient>
+          </div>
           <h2 className="mb-3 text-3xl font-semibold text-pretty md:mb-4 md:text-4xl lg:mb-6 lg:max-w-3xl lg:text-5xl">
             {heading}
           </h2>
@@ -83,53 +84,7 @@ export function FeaturedEvents({
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {items.map((evt: EventCard) => (
-            <Card
-              key={evt.id}
-              className="grid grid-rows-[auto_auto_1fr_auto] pt-0"
-            >
-              <div className="aspect-16/9 w-full">
-                <Link
-                  href={evt.url}
-                  className="transition-opacity duration-200 fade-in hover:opacity-75"
-                >
-                  <img
-                    src={evt.image}
-                    alt={evt.title}
-                    className="h-full w-full object-cover object-center rounded-t-lg"
-                  />
-                </Link>
-              </div>
-
-              <CardHeader>
-                <h3 className="text-lg font-semibold hover:underline md:text-xl">
-                  <Link href={evt.url}>{evt.title}</Link>
-                </h3>
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-2">
-                    <CalendarDays className="size-4" />
-                    {evt.date}
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <MapPin className="size-4" />
-                    {evt.location}
-                  </span>
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <p className="text-muted-foreground">{evt.summary}</p>
-              </CardContent>
-
-              <CardFooter>
-                <Link
-                  href={evt.url}
-                  className="flex items-center hover:underline"
-                >
-                  View details
-                  <ArrowRight className="ml-2 size-4" />
-                </Link>
-              </CardFooter>
-            </Card>
+            <EventPreviewCard key={evt.id} evt={evt} />
           ))}
         </div>
       </div>

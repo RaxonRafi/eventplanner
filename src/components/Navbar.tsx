@@ -1,190 +1,139 @@
 "use client";
-
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  MobileNav,
+  MobileNavHeader,
+  MobileNavMenu,
+  MobileNavToggle,
+  Navbar,
+  NavbarButton,
+  NavBody,
+  NavItems,
+} from "@/components/ui/resizable-navbar";
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
-import { MenuIcon } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import { useEffect, useState } from "react";
 import Logo from "../../public/svg/Logo";
-import { ModeToggle } from "./ui/modeToggle";
+import { HoverBorderGradient } from "./ui/hover-border-gradient";
 
-const Navbar = () => {
+export function NavbarComponent() {
   const { data } = useUserInfoQuery(undefined);
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  const [mounted, setMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => setMounted(true), []);
   const isLoggedIn = mounted && !!data?.data?.email;
-  const features = [
+
+  const navItems = [
     {
-      title: "Dashboard",
-      description: "Overview of your activity",
-      href: "/dashboard",
+      name: "Home",
+      link: "/",
     },
     {
-      title: "Analytics",
-      description: "Track your performance",
-      href: "/dashboard/analytics",
+      name: "About",
+      link: "/#about",
     },
-    // ...
+    {
+      name: "Events",
+      link: "/events",
+    },
+    {
+      name: "FAQ",
+      link: "/#faq",
+    },
   ];
 
+  const CustomNavbarLogo = () => {
+    return (
+      <Link
+        href="/"
+        className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
+      >
+        <Logo />
+        <span className="font-medium text-black dark:text-white">Eventers</span>
+      </Link>
+    );
+  };
+
   return (
-    <section className="py-4 sticky top-0 z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-      <div className="container mx-auto px-10">
-        <nav className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo />
-            <span className="text-lg font-semibold tracking-tighter">
-              Eventers
-            </span>
-          </Link>
-
-          <NavigationMenu className="hidden lg:block">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/"
-                  className={navigationMenuTriggerStyle()}
-                >
-                  Home
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/#about"
-                  className={navigationMenuTriggerStyle()}
-                >
-                  About
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/events"
-                  className={navigationMenuTriggerStyle()}
-                >
-                  Events
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/#faq"
-                  className={navigationMenuTriggerStyle()}
-                >
-                  FAQ
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-
-          <div className="hidden items-center gap-4 lg:flex">
+    <div className="relative w-full">
+      <Navbar>
+        {/* Desktop Navigation */}
+        <NavBody>
+          <CustomNavbarLogo />
+          <NavItems items={navItems} />
+          <div className="flex items-center gap-4">
             {mounted &&
               (isLoggedIn ? (
-                <Link href="/dashboard">
-                  <Button>Dashboard</Button>
-                </Link>
+                <NavbarButton as={Link} href="/dashboard" variant="primary">
+                  Dashboard
+                </NavbarButton>
               ) : (
-                <Link href="/login">
-                  <Button>Sign in</Button>
-                </Link>
-              ))}
-            <ModeToggle />
-          </div>
-
-          <Sheet>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="outline" size="icon">
-                <MenuIcon className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="top" className="max-h-screen overflow-auto">
-              <SheetHeader>
-                <SheetTitle>
-                  <Link href="/" className="flex items-center gap-2">
-                    <Logo />
-                    <span className="text-lg font-semibold tracking-tighter">
-                      Eventers
-                    </span>
-                  </Link>
-                </SheetTitle>
-              </SheetHeader>
-
-              <div className="flex flex-col p-4">
-                <Accordion type="single" collapsible className="mt-4 mb-2">
-                  <AccordionItem value="solutions" className="border-none">
-                    <AccordionTrigger className="text-base hover:no-underline">
-                      Features
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid md:grid-cols-2">
-                        {features.map((f) => (
-                          <Link
-                            key={f.href}
-                            href={f.href}
-                            className="rounded-md p-3 transition-colors hover:bg-muted/70"
-                          >
-                            <p className="mb-1 font-semibold text-foreground">
-                              {f.title}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {f.description}
-                            </p>
-                          </Link>
-                        ))}
+                <NavbarButton as={Link} href="/login" variant="secondary">
+                      <div className=" flex justify-center text-center">
+                        <HoverBorderGradient
+                          containerClassName="rounded-full"
+                          as="button"
+                          className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
+                        >
+                          <span>Sign In</span>
+                        </HoverBorderGradient>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                </NavbarButton>
+              ))}
+          </div>
+        </NavBody>
 
-                <div className="flex flex-col gap-6">
-                  <Link href="/templates" className="font-medium">
-                    Templates
-                  </Link>
-                  <Link href="/blog" className="font-medium">
-                    Blog
-                  </Link>
-                  <Link href="/pricing" className="font-medium">
-                    Pricing
-                  </Link>
-                </div>
+        {/* Mobile Navigation */}
+        <MobileNav>
+          <MobileNavHeader>
+            <CustomNavbarLogo />
+            <MobileNavToggle
+              isOpen={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            />
+          </MobileNavHeader>
 
-                <div className="mt-6 flex flex-col gap-4">
-                  {mounted &&
-                    (isLoggedIn ? (
-                      <Link href="/dashboard">
-                        <Button>Dashboard</Button>
-                      </Link>
-                    ) : (
-                      <Link href="/login">
-                        <Button variant="outline">Sign in</Button>
-                      </Link>
-                    ))}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </nav>
-      </div>
-    </section>
+          <MobileNavMenu
+            isOpen={isMobileMenuOpen}
+            onClose={() => setIsMobileMenuOpen(false)}
+          >
+            {navItems.map((item, idx) => (
+              <Link
+                key={`mobile-link-${idx}`}
+                href={item.link}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="relative text-neutral-600 dark:text-neutral-300"
+              >
+                <span className="block">{item.name}</span>
+              </Link>
+            ))}
+            <div className="flex w-full flex-col gap-4">
+              {mounted &&
+                (isLoggedIn ? (
+                  <NavbarButton
+                    as={Link}
+                    href="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    variant="primary"
+                    className="w-full"
+                  >
+                    Dashboard
+                  </NavbarButton>
+                ) : (
+                  <NavbarButton
+                    as={Link}
+                    href="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    variant="primary"
+                    className="w-full"
+                  >
+                    Sign in
+                  </NavbarButton>
+                ))}
+            </div>
+          </MobileNavMenu>
+        </MobileNav>
+      </Navbar>
+    </div>
   );
-};
-
-export { Navbar };
+}

@@ -1,12 +1,22 @@
 "use client";
 
-import { CalendarDays, MapPin, Ticket, Download, Share2, Users, Clock } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  CalendarDays,
+  Clock,
+  Download,
+  MapPin,
+  Share2,
+  Ticket,
+  Users,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+// Reusable preview card available for listing contexts
+// import { EventPreviewCard, EventPreview } from "@/components/EventPreviewCard";
 
 type EventPackage = {
   id: string;
@@ -26,16 +36,19 @@ interface EventDetailsProps {
   event: {
     id: string;
     title: string;
-    coverImage?: string;          // /images/event-cover.jpg
-    dateLabel: string;            // preformatted: "Sat, Oct 5, 2025 • 10:00 AM"
-    durationLabel?: string;       // "6 hours" (optional)
-    location: string;             // "Dhaka, Bangladesh"
-    capacity?: number;            // optional
-    descriptionHtml: string;      // trusted HTML (sanitized upstream)
+    coverImage?: string; // /images/event-cover.jpg
+    dateLabel: string; // preformatted: "Sat, Oct 5, 2025 • 10:00 AM"
+    durationLabel?: string; // "6 hours" (optional)
+    location: string; // "Dhaka, Bangladesh"
+    capacity?: number; // optional
+    descriptionHtml: string; // trusted HTML (sanitized upstream)
     organizer: Organizer;
     packages: EventPackage[];
-    readTimeLabel?: string;       // optional helper like "2 min read" (can omit)
-    shareLinks?: { platform: "instagram"|"linkedin"|"x"|"facebook"; href: string }[];
+    readTimeLabel?: string; // optional helper like "2 min read" (can omit)
+    shareLinks?: {
+      platform: "instagram" | "linkedin" | "x" | "facebook";
+      href: string;
+    }[];
     // Optional helpful links:
     venueMapUrl?: string;
     guidelinesUrl?: string;
@@ -44,7 +57,11 @@ interface EventDetailsProps {
   detailsCtaUrl?: string; // Fallback RSVP link if no handler provided
 }
 
-export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "/events" }: EventDetailsProps) {
+export default function EventDetails({
+  event,
+  onSelectPackage,
+  detailsCtaUrl = "/events",
+}: EventDetailsProps) {
   const {
     title,
     coverImage = "/images/about-1.jpg",
@@ -93,7 +110,10 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
                   <div className="text-sm">
                     <p className="font-medium">{location}</p>
                     {venueMapUrl && (
-                      <Link href={venueMapUrl} className="text-primary hover:underline text-xs">
+                      <Link
+                        href={venueMapUrl}
+                        className="text-primary hover:underline text-xs"
+                      >
                         View on map
                       </Link>
                     )}
@@ -143,17 +163,26 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
               </CardHeader>
               <CardContent className="p-5 space-y-3">
                 {packages.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No packages available right now.</p>
+                  <p className="text-xs text-muted-foreground">
+                    No packages available right now.
+                  </p>
                 )}
                 {packages.map((pkg) => (
-                  <div key={pkg.id} className="border rounded-lg p-4 flex items-start justify-between gap-4">
+                  <div
+                    key={pkg.id}
+                    className="border rounded-lg p-4 flex items-start justify-between gap-4"
+                  >
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold">{pkg.name}</p>
-                        <Badge variant="secondary">BDT {pkg.price.toFixed(0)}</Badge>
+                        <Badge variant="secondary">
+                          BDT {pkg.price.toFixed(0)}
+                        </Badge>
                       </div>
                       {pkg.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {pkg.description}
+                        </p>
                       )}
                     </div>
                     {onSelectPackage ? (
@@ -162,7 +191,11 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
                       </Button>
                     ) : (
                       <Button asChild size="sm">
-                        <Link href={`${detailsCtaUrl}/${event.id}?pkg=${pkg.id}`}>{pkg.ctaText ?? "RSVP"}</Link>
+                        <Link
+                          href={`${detailsCtaUrl}/${event.id}?pkg=${pkg.id}`}
+                        >
+                          {pkg.ctaText ?? "RSVP"}
+                        </Link>
                       </Button>
                     )}
                   </div>
@@ -170,7 +203,10 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
                 {guidelinesUrl && (
                   <p className="text-[11px] text-muted-foreground mt-2">
                     Please review our{" "}
-                    <Link href={guidelinesUrl} className="text-primary hover:underline">
+                    <Link
+                      href={guidelinesUrl}
+                      className="text-primary hover:underline"
+                    >
                       event guidelines
                     </Link>{" "}
                     before booking.
@@ -199,13 +235,17 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
                           target="_blank"
                         >
                           {/* You can swap to icons per platform if you prefer */}
-                          <span className="text-xs capitalize">{s.platform}</span>
+                          <span className="text-xs capitalize">
+                            {s.platform}
+                          </span>
                         </Link>
                       </li>
                     ))
                   ) : (
                     <>
-                      <li className="text-xs text-muted-foreground">No share links configured</li>
+                      <li className="text-xs text-muted-foreground">
+                        No share links configured
+                      </li>
                     </>
                   )}
                 </ul>
@@ -236,7 +276,13 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
         <div className="md:col-span-7 md:col-start-5 lg:col-start-6">
           {/* Cover */}
           <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
-            <Image src={coverImage} alt={title} fill className="object-cover" priority />
+            <Image
+              src={coverImage}
+              alt={title}
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
 
           <article className="prose dark:prose-invert prose-sm max-w-none">
@@ -244,14 +290,23 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
 
             {/* Top chips */}
             <div className="not-prose mt-3 flex flex-wrap items-center gap-3">
-              <Badge variant="secondary" className="inline-flex items-center gap-2">
+              <Badge
+                variant="secondary"
+                className="inline-flex items-center gap-2"
+              >
                 <CalendarDays className="size-3.5" /> {dateLabel}
               </Badge>
-              <Badge variant="outline" className="inline-flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="inline-flex items-center gap-2"
+              >
                 <MapPin className="size-3.5" /> {location}
               </Badge>
               {durationLabel && (
-                <Badge variant="outline" className="inline-flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="inline-flex items-center gap-2"
+                >
                   <Clock className="size-3.5" /> {durationLabel}
                 </Badge>
               )}
@@ -273,7 +328,9 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
                     asChild={!onSelectPackage}
                   >
                     {onSelectPackage ? (
-                      <span>RSVP — {pkg.name} (BDT {pkg.price.toFixed(0)})</span>
+                      <span>
+                        RSVP — {pkg.name} (BDT {pkg.price.toFixed(0)})
+                      </span>
                     ) : (
                       <Link href={`${detailsCtaUrl}/${event.id}?pkg=${pkg.id}`}>
                         RSVP — {pkg.name} (BDT {pkg.price.toFixed(0)})
@@ -289,6 +346,9 @@ export default function EventDetails({ event, onSelectPackage, detailsCtaUrl = "
 
             {/* Optional sections: agenda, FAQs, etc. (add as you like) */}
           </article>
+
+          {/* Related/More events (example usage of reusable card) */}
+          {/* You can map other events and render <EventPreviewCard evt={...} /> here if needed */}
         </div>
       </div>
     </section>

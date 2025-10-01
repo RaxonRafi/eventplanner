@@ -1,11 +1,15 @@
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { NavbarComponent } from "@/components/Navbar";
 
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default function SiteLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
-      <Navbar />
-      <main>{children}</main>
+      <NavbarComponent />
+      <main className="pt-20">{children}</main>
       <Footer />
     </>
   );
