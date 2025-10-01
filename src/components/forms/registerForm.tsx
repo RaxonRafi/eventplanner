@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useRegisterMutation } from "@/redux/features/User/user.api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Role } from "@prisma/client";
@@ -85,7 +86,11 @@ export function RegisterForm({
 
   return (
     <Form {...form}>
-      <form className="p-6 md:p-8" onSubmit={form.handleSubmit(onSubmit)}>
+      <form
+        className={cn("p-6 md:p-8", className)}
+        onSubmit={form.handleSubmit(onSubmit)}
+        {...props}
+      >
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center text-center">
             <h1 className="text-2xl font-bold">Welcome!</h1>
