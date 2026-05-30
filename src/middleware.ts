@@ -40,7 +40,11 @@ export function middleware(req: NextRequest) {
     const isOrganizer = role === "ORGANIZER";
 
     // Admin-only areas
-    if (pathname.startsWith("/dashboard/users") && !isAdmin) {
+    if (
+      (pathname.startsWith("/dashboard/admin") ||
+        pathname.startsWith("/dashboard/users")) &&
+      !isAdmin
+    ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 

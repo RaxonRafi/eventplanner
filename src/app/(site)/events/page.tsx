@@ -18,6 +18,7 @@ type PublicEvent = {
   description: string | null;
   date: string;
   location: string;
+  bannerImage?: string | null;
 };
 
 export default function EventsPage() {
@@ -65,7 +66,7 @@ export default function EventsPage() {
                   date: new Date(evt.date).toISOString().slice(0, 10),
                   location: evt.location,
                   url: `/events/${evt.id}`,
-                  image: "/images/about-1.jpg",
+                  image: evt.bannerImage || "/images/about-1.jpg",
                 };
                 return <EventPreviewCard key={item.id} evt={item} />;
               })

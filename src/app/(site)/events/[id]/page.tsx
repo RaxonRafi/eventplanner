@@ -39,7 +39,7 @@ export default function EventPage() {
       event={{
         id: data.id,
         title: data.title,
-        coverImage: "/images/about-1.jpg",
+        coverImage: data.bannerImage || "/images/about-1.jpg",
         dateLabel,
         durationLabel: undefined,
         location: data.location,

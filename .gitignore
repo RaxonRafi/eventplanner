@@ -40,4 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# uploaded event banners
+/public/uploads/events/*
+!/public/uploads/events/.gitkeep
+
 /src/generated/prisma

@@ -1,20 +1,22 @@
 import { baseApi } from "@/redux/baseApi";
 
+export type EventStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export const eventApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     allEvents: builder.query({
-      query: ({ page, take }) => ({
+      query: ({ status }: { status?: EventStatus } = {}) => ({
         url: "/api/events",
         method: "GET",
-        params: { page, take },
+        params: status ? { status } : undefined,
       }),
       providesTags: ["EVENT"],
     }),
     OrgEvents: builder.query({
-      query: ({ page, take }) => ({
+      query: ({ page, take, q, sort }) => ({
         url: "/api/events/org",
         method: "GET",
-        params: { page, take },
+        params: { page, limit: take, q, sort },
       }),
       providesTags: ["EVENT"],
     }),
@@ -40,6 +42,22 @@ export const eventApi = baseApi.injectEndpoints({
         method: "POST",
         data: eventInfo,
       }),
+      invalidatesTags: ["EVENT"],
+    }),
+    updateEventStatus: builder.mutation({
+      query: ({ id, status }: { id: string; status: EventStatus }) => ({
+        url: `/api/events/${id}/status`,
+        method: "PATCH",
+        data: { status },
+      }),
+      invalidatesTags: ["EVENT"],
+    }),
+    uploadBanner: builder.mutation<{ url: string }, FormData>({
+      query: (formData) => ({
+        url: "/api/upload",
+        method: "POST",
+        data: formData,
+      }),
     }),
     eventById: builder.query({
       query: (id: string) => ({
@@ -48,13 +66,13 @@ export const eventApi = baseApi.injectEndpoints({
       }),
       providesTags: ["EVENT"],
     }),
-    // deleteUser: builder.mutation({
-    //   query: (userId) => ({
-    //     url: `/api/users/${userId}`,
-    //     method: "DELETE",
-    //   }),
-    //   invalidatesTags: ["USER"],
-    // }),
+    adminStats: builder.query({
+      query: () => ({
+        url: "/api/admin/stats",
+        method: "GET",
+      }),
+      providesTags: ["EVENT", "USER"],
+    }),
   }),
 });
 export const {
@@ -63,4 +81,7 @@ export const {
   useCreateEventMutation,
   usePublicEventsQuery,
   useEventByIdQuery,
+  useUpdateEventStatusMutation,
+  useUploadBannerMutation,
+  useAdminStatsQuery,
 } = eventApi;

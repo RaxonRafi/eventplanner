@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { EventStatus } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -13,6 +14,7 @@ export async function GET(req: Request) {
     const q = searchParams.get("q")?.trim() || undefined;
 
     const where: any = {
+      status: EventStatus.APPROVED,
       ...(q
         ? {
             OR: [
@@ -37,6 +39,7 @@ export async function GET(req: Request) {
           description: true,
           date: true,
           location: true,
+          bannerImage: true,
         },
       }),
     ]);

@@ -17,8 +17,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateEventMutation } from "@/redux/features/Event/event.api";
-
+import {
+  useCreateEventMutation,
+  useUploadBannerMutation,
+} from "@/redux/features/Event/event.api";
+import Image from "next/image";
+import { useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 
 const packageSchema = z.object({
   name: z.string().min(2, { message: "Package name is required" }),
@@ -33,13 +38,17 @@ const eventSchema = z.object({
   date: z.string().min(1, "Date is required"),
   location: z.string().min(3, "Location is required"),
   capacity: z.coerce.number().positive("Capacity must be greater than 0"),
+  bannerImage: z.string().optional(),
   packages: z.array(packageSchema).min(1, "At least one package is required"),
 });
 
-
 export function CreateEventForm() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [createEvent, { isLoading }] = useCreateEventMutation();
+  const [uploadBanner, { isLoading: isUploading }] = useUploadBannerMutation();
+
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema) as any,
     defaultValues: {
@@ -48,6 +57,7 @@ export function CreateEventForm() {
       date: "",
       location: "",
       capacity: 100,
+      bannerImage: "",
       packages: [{ name: "Standard Pass", price: 0 }],
     },
   });
@@ -57,12 +67,52 @@ export function CreateEventForm() {
     name: "packages",
   });
 
+  const handleBannerSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setPreviewUrl(URL.createObjectURL(file));
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const result = await uploadBanner(formData).unwrap();
+      form.setValue("bannerImage", result.url);
+      toast.success("Banner uploaded");
+    } catch {
+      toast.error("Failed to upload banner");
+      setPreviewUrl(null);
+    }
+  };
+
+  const clearBanner = () => {
+    form.setValue("bannerImage", "");
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const onSubmit = async (data: z.infer<typeof eventSchema>) => {
     try {
       const payload = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        date: data.date,
+        location: data.location,
+        capacity: data.capacity,
+        bannerImage: data.bannerImage || undefined,
         packages: {
-          create: data.packages.map((pkg: { name: any; price: any; }) => ({
+          create: data.packages.map((pkg) => ({
             name: pkg.name,
             price: pkg.price,
           })),
@@ -70,7 +120,7 @@ export function CreateEventForm() {
       };
 
       await createEvent(payload).unwrap();
-      toast.success("Event created successfully!");
+      toast.success("Event created successfully! It will be reviewed by an admin.");
       router.push("/dashboard/events");
     } catch (error: any) {
       console.error(error);
@@ -78,9 +128,59 @@ export function CreateEventForm() {
     }
   };
 
+  const bannerImage = form.watch("bannerImage");
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Banner Upload */}
+        <FormItem>
+          <FormLabel>Event Banner</FormLabel>
+          <div className="space-y-3">
+            {(previewUrl || bannerImage) ? (
+              <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                <Image
+                  src={previewUrl || bannerImage!}
+                  alt="Event banner preview"
+                  fill
+                  className="object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 size-8"
+                  onClick={clearBanner}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <ImagePlus className="size-10 text-muted-foreground mb-2" />
+                <span className="text-sm text-muted-foreground">
+                  {isUploading ? "Uploading..." : "Click to upload banner image"}
+                </span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  JPEG, PNG, WebP or GIF • Max 5MB
+                </span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleBannerSelect}
+            />
+          </div>
+        </FormItem>
+
         {/* Title */}
         <FormField
           control={form.control}
@@ -221,7 +321,7 @@ export function CreateEventForm() {
         </div>
 
         {/* Submit */}
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full" disabled={isLoading || isUploading}>
           {isLoading ? "Creating..." : "Create Event"}
         </Button>
       </form>

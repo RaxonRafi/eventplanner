@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin } from "lucide-react";
 import { useOrgEventsQuery } from "@/redux/features/Event/event.api";
 
@@ -104,11 +105,26 @@ export function OrgEventList() {
                         {evt.title}
                       </Link>
                     </h3>
-                    {typeof evt._count?.rsvps === "number" && (
-                      <span className="text-xs text-muted-foreground">
-                        RSVPs: {evt._count.rsvps}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {evt.status && (
+                        <Badge
+                          variant={
+                            evt.status === "APPROVED"
+                              ? "default"
+                              : evt.status === "REJECTED"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {evt.status.charAt(0) + evt.status.slice(1).toLowerCase()}
+                        </Badge>
+                      )}
+                      {typeof evt._count?.rsvps === "number" && (
+                        <span className="text-xs text-muted-foreground">
+                          RSVPs: {evt._count.rsvps}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">

@@ -29,7 +29,7 @@ function getNavForRole(role: "ADMIN" | "ORGANIZER" | "USER" | null): {
   if (role === "ADMIN") {
     return {
       navMain: [
-        { title: "Dashboard", url: "/dashboard" },
+        { title: "Admin Dashboard", url: "/dashboard/admin" },
         {
           title: "Management",
           url: "#",

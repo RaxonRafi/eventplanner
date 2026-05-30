@@ -1,7 +1,24 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { redirect } from "next/navigation";
 
-export default function Page() {
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
+
+export default async function Page() {
+  const token = (await cookies()).get("token")?.value;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as { role?: string };
+      if (payload.role === "ADMIN") {
+        redirect("/dashboard/admin");
+      }
+    } catch {
+      // show default dashboard
+    }
+  }
+
   return (
     <SidebarInset>
       <header className="flex h-16 shrink-0 items-center gap-2 px-4">

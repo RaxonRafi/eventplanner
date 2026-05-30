@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { isAdmin } from "@/lib/auth";
+import { EventStatus } from "@prisma/client";
+import { getAuth, isAdmin } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// GET event by id (public)
+// GET event by id (public for approved; organizer/admin can view any)
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,6 +26,15 @@ export async function GET(
     });
     if (!event)
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+
+    const auth = getAuth(_req);
+    const isOwner = auth?.id === event.organizerId;
+    const canView =
+      event.status === EventStatus.APPROVED || isAdmin(_req) || isOwner;
+
+    if (!canView)
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+
     return NextResponse.json(event);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
