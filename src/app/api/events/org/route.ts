@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Prisma, Role } from "@prisma/client";
+import { EventStatus, Prisma, RSVPStatus, Role } from "@prisma/client";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
@@ -27,16 +27,23 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Number(searchParams.get("page") ?? 1);
-    const limit = Math.min(Number(searchParams.get("limit") ?? 10), 50);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "12", 10) || 12));
     const q = searchParams.get("q")?.trim() || undefined;
+    const statusParam = searchParams.get("status");
+    const status = (Object.values(EventStatus) as string[]).includes(statusParam ?? "")
+      ? (statusParam as EventStatus)
+      : undefined;
 
-    const sortParam = (searchParams.get("sort") ?? "date:desc") as `${SortField}:asc` | `${SortField}:desc`;
-    const [sortField, sortOrder] = sortParam.split(":") as [SortField, "asc" | "desc"];
+    // Only allow known sort fields — anything else falls back to the default
+    const SORT_FIELDS: SortField[] = ["title", "date", "createdAt", "location"];
+    const [rawField, rawOrder] = (searchParams.get("sort") ?? "date:desc").split(":");
+    const sortField: SortField = SORT_FIELDS.includes(rawField as SortField) ? (rawField as SortField) : "date";
+    const sortOrder = rawOrder === "asc" ? "asc" : "desc";
 
-    // ✅ Make this a Prisma.EventWhereInput (and pin mode literal)
     const where: Prisma.EventWhereInput = {
       organizerId: user.id,
+      ...(status ? { status } : {}),
       ...(q
         ? {
             OR: [
@@ -60,14 +67,14 @@ export async function GET(req: NextRequest) {
         take: limit,
         include: {
           packages: true,
-          _count: { select: { rsvps: true } },
+          _count: { select: { rsvps: { where: { status: RSVPStatus.CONFIRMED } } } },
         },
       }),
     ]);
 
     return NextResponse.json({
       data: items,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
     });
   } catch (e: any) {
     console.error("[organizer/events] GET error:", e?.message);

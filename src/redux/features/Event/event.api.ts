@@ -13,10 +13,10 @@ export const eventApi = baseApi.injectEndpoints({
       providesTags: ["EVENT"],
     }),
     OrgEvents: builder.query({
-      query: ({ page, take, q, sort }) => ({
+      query: ({ page, take, q, sort, status }) => ({
         url: "/api/events/org",
         method: "GET",
-        params: { page, limit: take, q, sort },
+        params: { page, limit: take, q, sort, status },
       }),
       providesTags: ["EVENT"],
     }),

@@ -15,9 +15,18 @@ import type { ReactNode } from "react";
 interface IProps {
   children: ReactNode;
   onConfirm: () => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
-export function DeleteConfirmation({ children, onConfirm }: IProps) {
+export function DeleteConfirmation({
+  children,
+  onConfirm,
+  title = "Are you absolutely sure?",
+  description = "This action cannot be undone.",
+  confirmLabel = "Delete",
+}: IProps) {
   const handleConfirm = () => {
     onConfirm();
   };
@@ -27,16 +36,16 @@ export function DeleteConfirmation({ children, onConfirm }: IProps) {
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm}>
-            Continue
+          <AlertDialogAction
+            onClick={handleConfirm}
+            className="bg-destructive text-white hover:bg-destructive/90"
+          >
+            {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
