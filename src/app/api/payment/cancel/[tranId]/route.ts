@@ -1,29 +1,28 @@
 import prisma from "@/lib/prisma";
-import { PaymentStatus, RSVPStatus } from "@prisma/client";
+import { PaymentStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * CANCEL PAYMENT
+ * SSLCommerz POSTs the customer's browser here when the payment is cancelled.
+ * The RSVP stays PENDING/unpaid so the user can retry from the event page.
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ tranId: string }> }
 ) {
   const { tranId } = await params;
 
-  const payment = await prisma.payment
-    .update({
-      where: { tranId },
+  // Never downgrade a payment that has already been validated as PAID
+  await prisma.payment
+    .updateMany({
+      where: { tranId, status: PaymentStatus.UNPAID },
       data: { status: PaymentStatus.CANCELLED },
-      select: { rsvpId: true },
     })
-    .catch(() => null);
+    .catch(() => {});
 
-  if (payment?.rsvpId) {
-    await prisma.rSVP
-      .update({
-        where: { id: payment.rsvpId },
-        data: { status: RSVPStatus.PENDING, paid: false },
-      })
-      .catch(() => {});
-  }
-
-  return NextResponse.json({ success: true, message: "Payment Cancelled" });
+  return NextResponse.redirect(
+    `${request.nextUrl.origin}/payment/cancel?tran_id=${encodeURIComponent(tranId)}`,
+    303
+  );
 }

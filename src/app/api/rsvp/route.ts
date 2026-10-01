@@ -31,7 +31,10 @@ export async function POST(req: Request) {
   }
 
   // input
-  const body = CreateSchema.parse(await req.json());
+  const parsed = CreateSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success)
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  const body = parsed.data;
   const tranId = `TXN-${uuidv4()}`;
 
   // load + validate event/package
@@ -73,17 +76,35 @@ export async function POST(req: Request) {
   const amountPaisa = Math.round(amountBDT * 100); // for DB (Int)
 
   try {
-    // DB: RSVP + Payment (UNPAID) — atomic
+    // DB: RSVP + Payment (UNPAID) — atomic.
+    // An unpaid RSVP left by a failed/cancelled/abandoned payment is reused so the user can retry.
     const { rsvp, payment } = await prisma.$transaction(async (tx) => {
-      const rsvp = await tx.rSVP.create({
-        data: {
-          userId: user.id,
-          eventId: event.id,
-          packageId: pkg.id,
-          status: RSVPStatus.PENDING,
-          paid: false,
-        },
+      const existing = await tx.rSVP.findUnique({
+        where: { userId_eventId: { userId: user.id, eventId: event.id } },
+        select: { id: true, paid: true },
       });
+      if (existing?.paid) throw { code: "P2002" };
+
+      if (existing) {
+        await tx.payment.updateMany({
+          where: { rsvpId: existing.id, status: PaymentStatus.UNPAID },
+          data: { status: PaymentStatus.CANCELLED },
+        });
+      }
+      const rsvp = existing
+        ? await tx.rSVP.update({
+            where: { id: existing.id },
+            data: { packageId: pkg.id, status: RSVPStatus.PENDING },
+          })
+        : await tx.rSVP.create({
+            data: {
+              userId: user.id,
+              eventId: event.id,
+              packageId: pkg.id,
+              status: RSVPStatus.PENDING,
+              paid: false,
+            },
+          });
       const payment = await tx.payment.create({
         data: {
           rsvpId: rsvp.id,
@@ -107,6 +128,7 @@ export async function POST(req: Request) {
       transactionId: tranId,
       name: buyer?.name ?? "Customer",
       email: buyer?.email ?? "noreply@example.com",
+      callbackOrigin: new URL(req.url).origin,
     });
     const paymentUrl = init.GatewayPageURL ;
 

@@ -11,15 +11,6 @@ const SSL_BASE =
 const STORE_ID = process.env.SSL_STORE_ID;
 const STORE_PASS = process.env.SSL_STORE_PASS;
 
-const SUCCESS_BACKEND_URL =
-  process.env.SSL_SUCCESS_BACKEND_URL ||
-  "http://localhost:3000/api/payments/return";
-const FAIL_BACKEND_URL =
-  process.env.SSL_FAIL_BACKEND_URL ||
-  "http://localhost:3000/api/payments/return";
-const CANCEL_BACKEND_URL =
-  process.env.SSL_CANCEL_BACKEND_URL ||
-  "http://localhost:3000/api/payments/return";
 const IPN_URL = process.env.SSL_IPN_URL || "";
 
 function toTwoDecimals(n: number) {
@@ -31,6 +22,8 @@ export interface ISSLCommerz {
   transactionId: string;
   name: string;
   email: string;
+  /** Public origin of this app, e.g. https://ureventers.vercel.app — gateway callbacks are built from it */
+  callbackOrigin: string;
 }
 
 export const SSLService = {
@@ -43,6 +36,9 @@ export const SSLService = {
       throw new Error("Missing SSLCOMMERZ credentials (STORE_ID / STORE_PASS)");
     }
 
+    const tranId = encodeURIComponent(payload.transactionId);
+    const api = `${payload.callbackOrigin}/api/payment`;
+
     // Build x-www-form-urlencoded body
     const form = new URLSearchParams({
       store_id: STORE_ID,
@@ -51,16 +47,10 @@ export const SSLService = {
       currency: "BDT",
       tran_id: payload.transactionId,
 
-      success_url: `${SUCCESS_BACKEND_URL}?tran_id=${encodeURIComponent(
-        payload.transactionId
-      )}`,
-      fail_url: `${FAIL_BACKEND_URL}?tran_id=${encodeURIComponent(
-        payload.transactionId
-      )}`,
-      cancel_url: `${CANCEL_BACKEND_URL}?tran_id=${encodeURIComponent(
-        payload.transactionId
-      )}`,
-      ...(IPN_URL ? { ipn_url: IPN_URL } : {}),
+      success_url: `${api}/success?tran_id=${tranId}`,
+      fail_url: `${api}/fail/${tranId}`,
+      cancel_url: `${api}/cancel/${tranId}`,
+      ...(IPN_URL && !IPN_URL.includes("localhost") ? { ipn_url: IPN_URL } : {}),
 
       shipping_method: "NO",
       product_name: "Event Ticket",
@@ -75,17 +65,20 @@ export const SSLService = {
       cus_phone: "01700000000",
     });
 
-    // Always use gateway base, not a custom env URL
-    const url = `${SSL_BASE}/gwprocess/v3/api.php`;
+    // Always use gateway base, not a custom env URL.
+    // v3 was retired: it now returns an HTML notice page instead of JSON.
+    const url = `${SSL_BASE}/gwprocess/v4/api.php`;
 
     const res = await axios.post(url, form.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      // timeout: 10000,
+      timeout: 15000,
     });
 
     const data = res.data || {};
     if (data.status !== "SUCCESS" || !data.GatewayPageURL) {
-      const reason = data.failedreason || "Invalid Information";
+      const reason =
+        data.failedreason ||
+        (typeof data === "string" ? "Unexpected non-JSON response" : "Invalid Information");
       throw new Error(`SSLC init error: ${reason}`);
     }
 
@@ -111,15 +104,26 @@ export const SSLService = {
       STORE_ID
     )}&store_passwd=${encodeURIComponent(STORE_PASS)}&format=json&v=1`;
 
-    const res = await axios.get(url /* , { timeout: 10000 } */);
+    const res = await axios.get(url, { timeout: 15000 });
     const vData = res.data || {};
 
-    const isOK = vData.status === "VALID" || vData.status === "VALIDATED";
+    const payment = await prisma.payment.findUnique({
+      where: { tranId },
+      select: { amount: true, currency: true },
+    });
+
+    // The val_id must belong to this transaction and cover the full amount
+    const isOK =
+      (vData.status === "VALID" || vData.status === "VALIDATED") &&
+      payment != null &&
+      vData.tran_id === tranId &&
+      vData.currency_type === payment.currency &&
+      Math.round(Number(vData.currency_amount) * 100) === payment.amount;
 
     if (!isOK) {
       await prisma.payment
-        .update({
-          where: { tranId },
+        .updateMany({
+          where: { tranId, status: { not: "PAID" } },
           data: {
             status: "FAILED",
             paymentGatewayData: JSON.stringify(vData),

@@ -55,12 +55,14 @@ interface EventDetailsProps {
   };
   onSelectPackage?: (pkg: EventPackage) => void; // If you want to open RSVP modal
   detailsCtaUrl?: string; // Fallback RSVP link if no handler provided
+  rsvpDisabledReason?: string; // e.g. "Event ended" — disables RSVP buttons and shows this label
 }
 
 export default function EventDetails({
   event,
   onSelectPackage,
   detailsCtaUrl = "/events",
+  rsvpDisabledReason,
 }: EventDetailsProps) {
   const {
     title,
@@ -185,7 +187,11 @@ export default function EventDetails({
                         </p>
                       )}
                     </div>
-                    {onSelectPackage ? (
+                    {rsvpDisabledReason ? (
+                      <Button size="sm" disabled>
+                        {rsvpDisabledReason}
+                      </Button>
+                    ) : onSelectPackage ? (
                       <Button size="sm" onClick={() => onSelectPackage(pkg)}>
                         {pkg.ctaText ?? "RSVP"}
                       </Button>
@@ -312,11 +318,8 @@ export default function EventDetails({
               )}
             </div>
 
-            {/* Description (HTML from CMS/backend – sanitize upstream) */}
-            <div
-              className="mt-6"
-              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-            />
+            {/* Description (plain text from the create-event form) */}
+            <p className="mt-6 whitespace-pre-line">{descriptionHtml}</p>
 
             {/* Quick CTA */}
             {packages.length > 0 && (
@@ -325,9 +328,14 @@ export default function EventDetails({
                   <Button
                     key={pkg.id}
                     onClick={() => onSelectPackage?.(pkg)}
-                    asChild={!onSelectPackage}
+                    asChild={!onSelectPackage && !rsvpDisabledReason}
+                    disabled={!!rsvpDisabledReason}
                   >
-                    {onSelectPackage ? (
+                    {rsvpDisabledReason ? (
+                      <span>
+                        {pkg.name} — {rsvpDisabledReason}
+                      </span>
+                    ) : onSelectPackage ? (
                       <span>
                         RSVP — {pkg.name} (BDT {pkg.price.toFixed(0)})
                       </span>

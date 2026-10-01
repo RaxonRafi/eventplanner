@@ -16,7 +16,8 @@ export default function EventPage() {
     { eventId: id, page: 1, limit: 1 },
     { skip: !id }
   );
-  const alreadyRsvped = (myRsvpData?.data?.length ?? 0) > 0;
+  // An unpaid RSVP (failed/cancelled payment) can be retried; only a paid one blocks
+  const alreadyRsvped = myRsvpData?.data?.[0]?.paid === true;
 
   if (!id) return null;
   if (isLoading) return <div className="container py-24">Loading…</div>;
@@ -25,6 +26,7 @@ export default function EventPage() {
   if (!data) return <div className="container py-24">Event not found.</div>;
 
   const date = new Date(data.date);
+  const isPast = date < new Date();
   const dateLabel = date.toLocaleString(undefined, {
     weekday: "short",
     month: "short",
@@ -86,6 +88,9 @@ export default function EventPage() {
         }
       }}
       detailsCtaUrl="/events"
+      rsvpDisabledReason={
+        isPast ? "Event ended" : alreadyRsvped ? "Already booked" : undefined
+      }
     />
   );
 }

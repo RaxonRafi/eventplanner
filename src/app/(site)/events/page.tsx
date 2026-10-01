@@ -42,7 +42,7 @@ export default function EventsPage() {
               <span> All events</span>
             </HoverBorderGradient>
           </div>
-          <h1 className="text-3xl font-semibold md:text-4xl">Browse events</h1>
+          <h1 className="text-3xl font-semibold text-white md:text-4xl">Browse events</h1>
           <p className="text-muted-foreground mt-2">
             Discover and RSVP to upcoming events.
           </p>
