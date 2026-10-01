@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBDT, PLATFORM_FEE_RATE } from "@/lib/fees";
 import { useDashboardStatsQuery } from "@/redux/features/Payment/payment.api";
+import { useUserInfoQuery } from "@/redux/features/User/user.api";
+import { PageIntro } from "@/components/dashboard/PageHeader";
 import {
   CalendarCheck,
   CalendarDays,
@@ -37,6 +39,18 @@ const fmtDate = (d: string) =>
 
 export function DashboardOverview() {
   const { data, isLoading, isError } = useDashboardStatsQuery(undefined);
+  const { data: me } = useUserInfoQuery(undefined);
+  const firstName = (me?.data?.name as string | undefined)?.split(" ")[0];
+  const greeting = (
+    <PageIntro
+      title={firstName ? `Welcome back, ${firstName}` : "Welcome back"}
+      description={
+        data?.role === "USER"
+          ? "Here's what's coming up for you."
+          : "Here's how your events are doing."
+      }
+    />
+  );
 
   if (isError)
     return <p className="p-4 text-sm text-muted-foreground">Failed to load your dashboard.</p>;
@@ -45,6 +59,7 @@ export function DashboardOverview() {
     const upcoming: UpcomingRsvp[] = data.upcoming;
     return (
       <div className="flex flex-col gap-6">
+        {greeting}
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard label="My RSVPs" value={data.totalRsvps} icon={Ticket} />
           <StatCard label="Confirmed" value={data.confirmedRsvps} icon={CalendarCheck} />
@@ -88,6 +103,7 @@ export function DashboardOverview() {
   const upcoming: UpcomingEvent[] = data?.upcoming ?? [];
   return (
     <div className="flex flex-col gap-6">
+      {greeting}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="My events"

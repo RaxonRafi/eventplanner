@@ -62,7 +62,7 @@ export async function GET(req: Request) {
     total,
     page,
     take,
-    totalPages: Math.ceil(total / take),
+    totalPages: Math.max(1, Math.ceil(total / take)),
   })
 }
 export async function POST(req: Request) {

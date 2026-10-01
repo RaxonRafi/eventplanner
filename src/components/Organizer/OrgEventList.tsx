@@ -1,187 +1,304 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// src/components/Organizer/OrgEventList.tsx
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-
+import { DeleteConfirmation } from "@/components/DeleteConfirmation";
+import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
+import { PageIntro } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CalendarDays, MapPin } from "lucide-react";
-import { useOrgEventsQuery } from "@/redux/features/Event/event.api";
+import { useDebounce } from "@/hooks/use-debounce";
+import { cn, eventImage } from "@/lib/utils";
+import { useDeleteEventMutation, useOrgEventsQuery } from "@/redux/features/Event/event.api";
+import {
+  CalendarDays,
+  CalendarPlus,
+  ExternalLink,
+  MapPin,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  Trash2,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-function useQueryState() {
-  const router = useRouter();
-  const sp = useSearchParams();
+type OrgEvent = {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  capacity: number | null;
+  bannerImage: string | null;
+  status: string;
+  packages: { price: number }[];
+  _count: { rsvps: number }; // confirmed bookings
+};
 
-  const page = Number(sp.get("page") ?? 1);
-  const limit = Number(sp.get("limit") ?? 10);
-  const q = sp.get("q") ?? "";
-  const sort = sp.get("sort") ?? "date:desc";
+const TABS = [
+  { label: "All", value: undefined },
+  { label: "Live", value: "APPROVED" },
+  { label: "In review", value: "PENDING" },
+  { label: "Rejected", value: "REJECTED" },
+] as const;
 
-  const setParams = React.useCallback(
-    (next: Partial<{ page: number; limit: number; q: string; sort: string }>) => {
-      const params = new URLSearchParams(sp.toString());
-      if (next.page) params.set("page", String(next.page));
-      if (next.limit) params.set("limit", String(next.limit));
-      if (typeof next.q === "string") params.set("q", next.q);
-      if (next.sort) params.set("sort", next.sort);
-      router.replace(`?${params.toString()}`);
-    },
-    [router, sp]
-  );
-
-  return { page, limit, q, sort, setParams };
-}
+const SORTS = [
+  { label: "Date: latest", value: "date:desc" },
+  { label: "Date: soonest", value: "date:asc" },
+  { label: "Recently created", value: "createdAt:desc" },
+  { label: "Title A–Z", value: "title:asc" },
+];
 
 export function OrgEventList() {
-  const { page, limit, q, sort, setParams } = useQueryState();
-  const { data, isLoading, isFetching, error } = useOrgEventsQuery({
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<string | undefined>(undefined);
+  const [sort, setSort] = useState("date:desc");
+  const [search, setSearch] = useState("");
+  const q = useDebounce(search.trim(), 400);
+
+  // Any filter change goes back to the first page
+  useEffect(() => setPage(1), [q, status, sort]);
+
+  const { data, isLoading, isFetching, isError } = useOrgEventsQuery({
     page,
-    limit,
-    q,
+    take: 9,
+    q: q || undefined,
     sort,
+    status,
   });
+  const [deleteEvent] = useDeleteEventMutation();
 
-  const [search, setSearch] = React.useState(q);
-  // small debounce so we don't refetch on every keypress
-  React.useEffect(() => {
-    const t = setTimeout(() => setParams({ page: 1, q: search }), 400);
-    return () => clearTimeout(t);
-  }, [search, setParams]);
+  const events: OrgEvent[] = data?.data ?? [];
+  const totalPages: number = data?.meta?.totalPages ?? 1;
 
-  const onPrev = () => page > 1 && setParams({ page: page - 1 });
-  const onNext = () =>
-    data && page < data.meta.totalPages && setParams({ page: page + 1 });
+  const handleDelete = async (evt: OrgEvent) => {
+    const id = toast.loading("Deleting event…");
+    try {
+      await deleteEvent(evt.id).unwrap();
+      toast.success(`"${evt.title}" deleted`, { id });
+    } catch (err) {
+      const e = err as { data?: { error?: string } };
+      toast.error(e?.data?.error || "Couldn't delete the event", { id });
+    }
+  };
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search title, description, location…"
-          className="w-full sm:w-72"
-        />
-        <select
-          className="border rounded-md px-3 py-2 text-sm bg-background"
-          value={sort}
-          onChange={(e) => setParams({ sort: e.target.value, page: 1 })}
-        >
-          <option value="date:desc">Date ↓</option>
-          <option value="date:asc">Date ↑</option>
-          <option value="createdAt:desc">Created ↓</option>
-          <option value="createdAt:asc">Created ↑</option>
-          <option value="title:asc">Title A→Z</option>
-          <option value="title:desc">Title Z→A</option>
-        </select>
+    <div className="space-y-6">
+      <PageIntro
+        title="My events"
+        description="Create, edit and track the events you organize."
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/events/create">
+              <CalendarPlus className="size-4" /> Create event
+            </Link>
+          </Button>
+        }
+      />
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search your events…"
+            className="pl-9"
+            aria-label="Search events"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-lg bg-muted p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.label}
+                onClick={() => setStatus(t.value)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  status === t.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="h-9 rounded-md border bg-background px-3 text-sm"
+            aria-label="Sort events"
+          >
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-lg" />
+            <Skeleton key={i} className="h-80 w-full rounded-xl" />
           ))}
         </div>
-      ) : error ? (
-        <Card>
-          <CardContent className="py-8">
-            <p className="text-sm text-destructive">Failed to load events.</p>
-          </CardContent>
-        </Card>
-      ) : data && data.data.length > 0 ? (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {data.data.map((evt:any) => (
-              <Card key={evt.id} className="overflow-hidden">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold leading-tight">
-                      <Link href={`/events/${evt.id}`} className="hover:underline">
-                        {evt.title}
-                      </Link>
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {evt.status && (
-                        <Badge
-                          variant={
-                            evt.status === "APPROVED"
-                              ? "default"
-                              : evt.status === "REJECTED"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {evt.status.charAt(0) + evt.status.slice(1).toLowerCase()}
-                        </Badge>
-                      )}
-                      {typeof evt._count?.rsvps === "number" && (
-                        <span className="text-xs text-muted-foreground">
-                          RSVPs: {evt._count.rsvps}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CalendarDays className="size-4" />
-                    {new Intl.DateTimeFormat(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(evt.date))}
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="size-4" />
-                    <span>{evt.location}</span>
-                  </div>
-                  {typeof evt.capacity === "number" && (
-                    <div className="text-muted-foreground">Capacity: {evt.capacity}</div>
-                  )}
-                  <div className="pt-2 flex gap-2">
-                    <Link href={`/dashboard/events/${evt.id}`}>
-                      <Button size="sm" variant="outline">Manage</Button>
-                    </Link>
-                    <Link href={`/events/${evt.id}`}>
-                      <Button size="sm">View</Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between pt-2">
-            <p className="text-xs text-muted-foreground">
-              Page {data.meta.page} of {data.meta.totalPages} • {data.meta.total} total
-            </p>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={onPrev} disabled={page <= 1 || isFetching}>
-                Prev
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onNext}
-                disabled={!data || page >= data.meta.totalPages || isFetching}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </>
+      ) : isError ? (
+        <p className="rounded-xl border p-10 text-center text-sm text-destructive">Failed to load events.</p>
+      ) : events.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-12 text-center">
+          <CalendarPlus className="size-10 text-muted-foreground" />
+          <p className="font-medium">{q || status ? "No events match your filters" : "No events yet"}</p>
+          <p className="text-sm text-muted-foreground">
+            {q || status ? "Try another search or tab." : "Create your first event to start selling tickets."}
+          </p>
+          {!q && !status && (
+            <Button asChild className="mt-2">
+              <Link href="/dashboard/events/create">Create event</Link>
+            </Button>
+          )}
+        </div>
       ) : (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No events found.
-          </CardContent>
-        </Card>
+        <div className={cn("grid gap-5 sm:grid-cols-2 xl:grid-cols-3", isFetching && "opacity-60")}>
+          {events.map((evt) => {
+            const date = new Date(evt.date);
+            const past = date < new Date();
+            const booked = evt._count.rsvps;
+            const fill = evt.capacity ? Math.min(100, (booked / evt.capacity) * 100) : 0;
+            const from = evt.packages.length ? Math.min(...evt.packages.map((p) => p.price)) : null;
+            return (
+              <div
+                key={evt.id}
+                className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="relative aspect-[16/9] bg-muted">
+                  <Image
+                    src={eventImage(evt)}
+                    alt={evt.title}
+                    fill
+                    sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className={cn("object-cover", past && "grayscale-[50%]")}
+                  />
+                  <div className="absolute left-3 top-3 flex gap-1.5">
+                    <EventStatusBadge status={evt.status} className="bg-background/90 backdrop-blur" />
+                    {past && (
+                      <span className="rounded-md bg-background/90 px-2 py-0.5 text-xs font-medium backdrop-blur">
+                        Ended
+                      </span>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="absolute right-3 top-3 size-8 bg-background/90 backdrop-blur"
+                        aria-label="Event actions"
+                      >
+                        <MoreHorizontal className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/events/${evt.id}/edit`}>
+                          <Pencil /> Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/events/${evt.id}`}>
+                          <ExternalLink /> View public page
+                        </Link>
+                      </DropdownMenuItem>
+                      <DeleteConfirmation
+                        title={`Delete "${evt.title}"?`}
+                        description={
+                          booked > 0
+                            ? "This event has paid bookings and can't be deleted."
+                            : "The event and its ticket packages will be permanently removed."
+                        }
+                        onConfirm={() => handleDelete(evt)}
+                      >
+                        <DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()}>
+                          <Trash2 /> Delete
+                        </DropdownMenuItem>
+                      </DeleteConfirmation>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <h3 className="line-clamp-1 font-semibold">{evt.title}</h3>
+                  <div className="space-y-1.5 text-sm text-muted-foreground">
+                    <p className="flex items-center gap-2">
+                      <CalendarDays className="size-4 shrink-0" />
+                      {date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <MapPin className="size-4 shrink-0" />
+                      <span className="truncate">{evt.location}</span>
+                    </p>
+                  </div>
+
+                  <div className="mt-auto space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {booked} {evt.capacity ? `/ ${evt.capacity}` : ""} booked
+                      </span>
+                      {from != null && <span className="font-medium">From BDT {from.toLocaleString()}</span>}
+                    </div>
+                    {evt.capacity ? (
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${fill}%` }} />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/events/${evt.id}/edit`}>
+                        <Pencil className="size-3.5" /> Edit
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="secondary">
+                      <Link href={`/events/${evt.id}`}>
+                        <ExternalLink className="size-3.5" /> View
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
-    </section>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="mr-2 text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <Button size="sm" variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((p) => p - 1)}>
+            Previous
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={page >= totalPages || isFetching}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

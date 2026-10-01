@@ -1,134 +1,225 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { DeleteConfirmation } from "@/components/DeleteConfirmation";
+import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
+import { PageIntro } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn, eventImage } from "@/lib/utils";
 import {
+  type EventStatus,
   useAllEventsQuery,
+  useDeleteEventMutation,
   useUpdateEventStatusMutation,
 } from "@/redux/features/Event/event.api";
-import { CheckCircle2, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, ExternalLink, MoreHorizontal, Pencil, Search, Trash2, XCircle } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-function StatusBadge({ status }: { status: string }) {
-  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    PENDING: "secondary",
-    APPROVED: "default",
-    REJECTED: "destructive",
-  };
-  return (
-    <Badge variant={variants[status] ?? "outline"}>
-      {status.charAt(0) + status.slice(1).toLowerCase()}
-    </Badge>
-  );
-}
+type AdminEvent = {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  capacity: number | null;
+  bannerImage: string | null;
+  status: EventStatus;
+  organizer: { name: string | null; email: string } | null;
+  _count: { rsvps: number }; // confirmed bookings
+};
+
+const TABS: { label: string; value?: EventStatus }[] = [
+  { label: "All" },
+  { label: "In review", value: "PENDING" },
+  { label: "Live", value: "APPROVED" },
+  { label: "Rejected", value: "REJECTED" },
+];
 
 export function EventList() {
-  const { data, isLoading, isError } = useAllEventsQuery({});
+  const [status, setStatus] = useState<EventStatus | undefined>(undefined);
+  const [search, setSearch] = useState("");
+  const { data, isLoading, isFetching, isError } = useAllEventsQuery({ status });
   const [updateStatus, { isLoading: isUpdating }] = useUpdateEventStatusMutation();
+  const [deleteEvent] = useDeleteEventMutation();
 
-  const events = data ?? [];
+  const events: AdminEvent[] = useMemo(() => {
+    const all: AdminEvent[] = data ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter((e) =>
+      [e.title, e.location, e.organizer?.name, e.organizer?.email].some((v) => v?.toLowerCase().includes(q))
+    );
+  }, [data, search]);
 
-  const handleStatus = async (id: string, status: "APPROVED" | "REJECTED") => {
+  const handleStatus = async (evt: AdminEvent, next: "APPROVED" | "REJECTED") => {
     try {
-      await updateStatus({ id, status }).unwrap();
-      toast.success(`Event ${status === "APPROVED" ? "approved" : "declined"}`);
+      await updateStatus({ id: evt.id, status: next }).unwrap();
+      toast.success(`"${evt.title}" ${next === "APPROVED" ? "approved" : "rejected"}`);
     } catch {
       toast.error("Failed to update event status");
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading events</div>;
+  const handleDelete = async (evt: AdminEvent) => {
+    const id = toast.loading("Deleting event…");
+    try {
+      await deleteEvent(evt.id).unwrap();
+      toast.success(`"${evt.title}" deleted`, { id });
+    } catch (err) {
+      const e = err as { data?: { error?: string } };
+      toast.error(e?.data?.error || "Couldn't delete the event", { id });
+    }
+  };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>All Events</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full caption-bottom text-sm">
-            <caption className="mt-4 text-muted-foreground">
-              A list of all events • Total: {events.length}
-            </caption>
-            <thead className="[&_tr]:border-b">
-              <tr className="border-b transition-colors hover:bg-muted/50">
-                <th className="h-12 px-4 text-left align-middle font-medium">Title</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Organizer</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Location</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">RSVPs</th>
-                <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
+    <div className="space-y-6">
+      <PageIntro title="All events" description="Review, approve and manage every event on the platform." />
+
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title, location or organizer…"
+            className="pl-9"
+            aria-label="Search events"
+          />
+        </div>
+        <div className="flex w-fit rounded-lg bg-muted p-1">
+          {TABS.map((t) => (
+            <button
+              key={t.label}
+              onClick={() => setStatus(t.value)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                status === t.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Card className="gap-0 overflow-hidden py-0">
+        <div className={cn("overflow-x-auto", isFetching && "opacity-60")}>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr className="text-left text-muted-foreground">
+                <th className="h-11 px-4 font-medium">Event</th>
+                <th className="h-11 px-4 font-medium">Organizer</th>
+                <th className="h-11 px-4 font-medium">Date</th>
+                <th className="h-11 px-4 font-medium">Booked</th>
+                <th className="h-11 px-4 font-medium">Status</th>
+                <th className="h-11 px-4 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {events.length === 0 ? (
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-t">
+                    <td colSpan={6} className="p-4">
+                      <Skeleton className="h-10 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : isError ? (
                 <tr>
-                  <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-10 text-center text-destructive">
+                    Failed to load events.
+                  </td>
+                </tr>
+              ) : events.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-10 text-center text-muted-foreground">
                     No events found.
                   </td>
                 </tr>
               ) : (
-                events.map((event: any) => (
-                  <tr
-                    key={event.id}
-                    className="border-b transition-colors hover:bg-muted/50"
-                  >
-                    <td className="p-4 align-middle font-medium">{event.title}</td>
-                    <td className="p-4 align-middle text-sm text-muted-foreground">
-                      {event.organizer?.name || event.organizer?.email || "-"}
+                events.map((evt) => (
+                  <tr key={evt.id} className="border-t transition-colors hover:bg-muted/40">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
+                          <Image src={eventImage(evt)} alt="" fill sizes="44px" className="object-cover" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="max-w-56 truncate font-medium">{evt.title}</p>
+                          <p className="max-w-56 truncate text-xs text-muted-foreground">{evt.location}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="p-4 align-middle">
-                      {new Date(event.date).toLocaleString()}
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {evt.organizer?.name || evt.organizer?.email || "—"}
                     </td>
-                    <td className="p-4 align-middle">{event.location}</td>
-                    <td className="p-4 align-middle">
-                      <StatusBadge status={event.status} />
+                    <td className="whitespace-nowrap px-4 py-3">
+                      {new Date(evt.date).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                     </td>
-                    <td className="p-4 align-middle">{event.rsvps?.length ?? 0}</td>
-                    <td className="p-4 align-middle">
-                      <div className="flex gap-1">
-                        {event.status === "PENDING" && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatus(event.id, "APPROVED")}
-                              disabled={isUpdating}
-                            >
-                              <CheckCircle2 className="size-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleStatus(event.id, "REJECTED")}
-                              disabled={isUpdating}
-                            >
-                              <XCircle className="size-4" />
-                            </Button>
-                          </>
-                        )}
-                        {event.status === "REJECTED" && (
+                    <td className="px-4 py-3 tabular-nums">
+                      {evt._count.rsvps}
+                      {evt.capacity ? <span className="text-muted-foreground"> / {evt.capacity}</span> : null}
+                    </td>
+                    <td className="px-4 py-3">
+                      <EventStatusBadge status={evt.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {evt.status !== "APPROVED" && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleStatus(event.id, "APPROVED")}
                             disabled={isUpdating}
+                            onClick={() => handleStatus(evt, "APPROVED")}
                           >
-                            Approve
+                            <CheckCircle2 className="size-4 text-green-600" /> Approve
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost">
-                          <Trash2 className="size-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="size-8" aria-label="More actions">
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/events/${evt.id}/edit`}>
+                                <Pencil /> Edit
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/events/${evt.id}`}>
+                                <ExternalLink /> View public page
+                              </Link>
+                            </DropdownMenuItem>
+                            {evt.status !== "REJECTED" && (
+                              <DropdownMenuItem onClick={() => handleStatus(evt, "REJECTED")}>
+                                <XCircle /> Reject
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DeleteConfirmation
+                              title={`Delete "${evt.title}"?`}
+                              description="Events with paid bookings can't be deleted — reject them instead."
+                              onConfirm={() => handleDelete(evt)}
+                            >
+                              <DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()}>
+                                <Trash2 /> Delete
+                              </DropdownMenuItem>
+                            </DeleteConfirmation>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
@@ -137,7 +228,12 @@ export function EventList() {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+        {!isLoading && !isError && (
+          <p className="border-t px-4 py-3 text-xs text-muted-foreground">
+            {events.length} event{events.length === 1 ? "" : "s"}
+          </p>
+        )}
+      </Card>
+    </div>
   );
 }

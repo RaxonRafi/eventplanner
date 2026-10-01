@@ -10,10 +10,10 @@ export const rsvpApi = baseApi.injectEndpoints({
       }),
     }),
     allRsvp: builder.query({
-      query: ({ page, limit }) => ({
+      query: ({ page, limit, status }: { page: number; limit: number; status?: string }) => ({
         url: "/api/rsvp",
         method: "GET",
-        params: { page, limit },
+        params: { page, limit, status },
       }),
       providesTags: ["RSVP"],
     }),

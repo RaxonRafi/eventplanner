@@ -1,183 +1,186 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
+import { DeleteConfirmation } from "@/components/DeleteConfirmation";
+import { PageIntro } from "@/components/dashboard/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
-import { Trash2 } from "lucide-react";
-
-import { useState } from "react";
-
-import {
-  useAllUsersQuery,
-  useDeleteUserMutation,
-} from "@/redux/features/User/user.api";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
+import { useAllUsersQuery, useDeleteUserMutation, useUserInfoQuery } from "@/redux/features/User/user.api";
+import { Search, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { DeleteConfirmation } from "../DeleteConfirmation";
+
+type User = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: "ADMIN" | "ORGANIZER" | "USER";
+  createdAt: string;
+};
+
+const ROLE: Record<User["role"], { label: string; className: string }> = {
+  ADMIN: { label: "Admin", className: "bg-violet-500/15 text-violet-700 dark:text-violet-400" },
+  ORGANIZER: { label: "Organizer", className: "bg-blue-500/15 text-blue-700 dark:text-blue-400" },
+  USER: { label: "Member", className: "bg-muted text-muted-foreground" },
+};
+
+const initials = (u: User) =>
+  (u.name || u.email)
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
 export function UserList() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const q = useDebounce(search.trim(), 400);
+  useEffect(() => setPage(1), [q]);
 
-  const [take] = useState(5);
-  const { data, isLoading, isError } = useAllUsersQuery({
-    page: currentPage,
-    take,
-  });
-  const totalPage = data?.totalPages || 1;
-  const users = data?.data || [];
+  const { data, isLoading, isFetching, isError } = useAllUsersQuery({ page, take: 10, q: q || undefined });
+  const { data: me } = useUserInfoQuery(undefined);
   const [deleteUser] = useDeleteUserMutation();
 
-  const handleRemoveUser = async (userId: string) => {
-    const toastId = toast.loading("Removing...");
+  const users: User[] = data?.data ?? [];
+  const totalPages: number = data?.totalPages ?? 1;
+
+  const handleRemove = async (user: User) => {
+    const id = toast.loading(`Removing ${user.name || user.email}…`);
     try {
-      const res = await deleteUser(userId).unwrap();
-      if (res.message === "User deleted") {
-        toast.success("Removed", { id: toastId });
-      }
+      await deleteUser(user.id).unwrap();
+      toast.success("User removed", { id });
     } catch (err) {
-      console.error(err);
+      const e = err as { data?: { error?: string } };
+      toast.error(e?.data?.error || "Couldn't remove the user", { id });
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading users</div>;
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>User List</CardTitle>
-        <CardAction>{/* <AddUsersForm/> */}</CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full caption-bottom text-sm">
-            <caption className="mt-4 text-muted-foreground">
-              A list of users
-              {typeof data?.total === "number" ? ` • Total: ${data.total}` : ""}
-              .
-            </caption>
-            <thead className="[&_tr]:border-b">
-              <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                <th className="h-12 px-4 text-left align-middle font-medium">
-                  Name
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
-                  Email
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
-                  Role
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
-                  Registered At
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
-                  Action
+    <div className="space-y-6">
+      <PageIntro
+        title="Users"
+        description="Everyone registered on the platform."
+        actions={
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name or email…"
+              className="pl-9"
+              aria-label="Search users"
+            />
+          </div>
+        }
+      />
+      <Card className="gap-0 overflow-hidden py-0">
+        <div className={cn("overflow-x-auto", isFetching && "opacity-60")}>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr className="text-left text-muted-foreground">
+                <th className="h-11 px-4 font-medium">User</th>
+                <th className="h-11 px-4 font-medium">Role</th>
+                <th className="h-11 px-4 font-medium">Joined</th>
+                <th className="h-11 px-4 text-right font-medium">
+                  <span className="sr-only">Actions</span>
                 </th>
               </tr>
             </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {users.length === 0 ? (
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-t">
+                    <td colSpan={4} className="p-4">
+                      <Skeleton className="h-9 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : isError ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="p-4 text-center text-muted-foreground"
-                  >
+                  <td colSpan={4} className="p-10 text-center text-destructive">
+                    Failed to load users.
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-10 text-center text-muted-foreground">
                     No users found.
                   </td>
                 </tr>
               ) : (
-                users.map((user: any) => (
-                  <tr
-                    key={user.id}
-                    className="border-b transition-colors hover:bg-muted/50"
-                  >
-                    <td className="p-4 align-middle font-medium">
-                      {user.name}
-                    </td>
-                    <td className="p-4 align-middle">{user.email}</td>
-                    <td className="p-4 align-middle">{user.role}</td>
-                    <td className="p-4 align-middle">
-                      {new Date(user.createdAt).toLocaleString()}
-                    </td>
-                    <td className="p-4 align-middle">
-                      <DeleteConfirmation
-                        onConfirm={() => handleRemoveUser(user.id)}
-                      >
-                        <Button size="sm">
-                          <Trash2 />
-                        </Button>
-                      </DeleteConfirmation>
-                    </td>
-                  </tr>
-                ))
+                users.map((u) => {
+                  const isMe = u.id === me?.data?.id;
+                  return (
+                    <tr key={u.id} className="border-t transition-colors hover:bg-muted/40">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {initials(u)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">
+                              {u.name || "—"} {isMe && <span className="text-xs text-muted-foreground">(you)</span>}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className={cn("border-0", ROLE[u.role]?.className)}>
+                          {ROLE[u.role]?.label ?? u.role}
+                        </Badge>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                        {new Date(u.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {!isMe && (
+                          <DeleteConfirmation
+                            title={`Remove ${u.name || u.email}?`}
+                            description="Their account and unpaid bookings will be deleted. Users who organize events or have paid bookings can't be removed."
+                            confirmLabel="Remove user"
+                            onConfirm={() => handleRemove(u)}
+                          >
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8 text-muted-foreground hover:text-destructive"
+                              aria-label={`Remove ${u.name || u.email}`}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </DeleteConfirmation>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
-      </CardContent>
-      {totalPage && (
-        <div className="flex justify-end mt-4">
-          <div>
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    size="default"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-                {Array.from({ length: totalPage }, (_, index) => index + 1).map(
-                  (page) => (
-                    <PaginationItem
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                    >
-                      <PaginationLink
-                        size="default"
-                        isActive={currentPage === page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                )}
-                <PaginationItem>
-                  <PaginationNext
-                    size="default"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPage, prev + 1))
-                    }
-                    className={
-                      currentPage === totalPage
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+        {!isLoading && !isError && (
+          <p className="border-t px-4 py-3 text-xs text-muted-foreground">{data?.total ?? 0} users</p>
+        )}
+      </Card>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="mr-2 text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            Previous
+          </Button>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </Button>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
