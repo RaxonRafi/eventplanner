@@ -13,7 +13,11 @@ import type { ReactNode } from "react";
 
 
 interface IProps {
-  children: ReactNode;
+  /** Trigger element. Omit it and pass `open`/`onOpenChange` to control the dialog yourself
+   *  (e.g. when opening it from a dropdown menu item, which closes before the dialog opens). */
+  children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onConfirm: () => void;
   title?: string;
   description?: string;
@@ -22,6 +26,8 @@ interface IProps {
 
 export function DeleteConfirmation({
   children,
+  open,
+  onOpenChange,
   onConfirm,
   title = "Are you absolutely sure?",
   description = "This action cannot be undone.",
@@ -32,8 +38,8 @@ export function DeleteConfirmation({
   };
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      {children && <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

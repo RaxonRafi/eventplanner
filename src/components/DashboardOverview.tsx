@@ -9,6 +9,7 @@ import { formatBDT, PLATFORM_FEE_RATE } from "@/lib/fees";
 import { useDashboardStatsQuery } from "@/redux/features/Payment/payment.api";
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
 import { PageIntro } from "@/components/dashboard/PageHeader";
+import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
 import {
   CalendarCheck,
   CalendarDays,
@@ -172,9 +173,7 @@ export function DashboardOverview() {
                         {e.bookings}
                         {e.capacity ? ` / ${e.capacity}` : ""} booked
                       </span>
-                      <Badge variant={e.status === "APPROVED" ? "default" : "secondary"}>
-                        {e.status.charAt(0) + e.status.slice(1).toLowerCase()}
-                      </Badge>
+                      <EventStatusBadge status={e.status} />
                     </div>
                   </div>
                   {e.capacity ? (

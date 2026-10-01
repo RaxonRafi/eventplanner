@@ -74,6 +74,7 @@ export function OrgEventList() {
     status,
   });
   const [deleteEvent] = useDeleteEventMutation();
+  const [toDelete, setToDelete] = useState<OrgEvent | null>(null);
 
   const events: OrgEvent[] = data?.data ?? [];
   const totalPages: number = data?.meta?.totalPages ?? 1;
@@ -218,19 +219,9 @@ export function OrgEventList() {
                           <ExternalLink /> View public page
                         </Link>
                       </DropdownMenuItem>
-                      <DeleteConfirmation
-                        title={`Delete "${evt.title}"?`}
-                        description={
-                          booked > 0
-                            ? "This event has paid bookings and can't be deleted."
-                            : "The event and its ticket packages will be permanently removed."
-                        }
-                        onConfirm={() => handleDelete(evt)}
-                      >
-                        <DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()}>
-                          <Trash2 /> Delete
-                        </DropdownMenuItem>
-                      </DeleteConfirmation>
+                      <DropdownMenuItem variant="destructive" onSelect={() => setToDelete(evt)}>
+                        <Trash2 /> Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -280,6 +271,18 @@ export function OrgEventList() {
           })}
         </div>
       )}
+
+      <DeleteConfirmation
+        open={toDelete != null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        title={`Delete "${toDelete?.title}"?`}
+        description={
+          toDelete && toDelete._count.rsvps > 0
+            ? "This event has bookings. Events with paid bookings can't be deleted."
+            : "The event and its ticket packages will be permanently removed."
+        }
+        onConfirm={() => toDelete && handleDelete(toDelete)}
+      />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-end gap-2">

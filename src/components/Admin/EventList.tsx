@@ -52,6 +52,7 @@ export function EventList() {
   const { data, isLoading, isFetching, isError } = useAllEventsQuery({ status });
   const [updateStatus, { isLoading: isUpdating }] = useUpdateEventStatusMutation();
   const [deleteEvent] = useDeleteEventMutation();
+  const [toDelete, setToDelete] = useState<AdminEvent | null>(null);
 
   const events: AdminEvent[] = useMemo(() => {
     const all: AdminEvent[] = data ?? [];
@@ -209,15 +210,9 @@ export function EventList() {
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DeleteConfirmation
-                              title={`Delete "${evt.title}"?`}
-                              description="Events with paid bookings can't be deleted — reject them instead."
-                              onConfirm={() => handleDelete(evt)}
-                            >
-                              <DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()}>
-                                <Trash2 /> Delete
-                              </DropdownMenuItem>
-                            </DeleteConfirmation>
+                            <DropdownMenuItem variant="destructive" onSelect={() => setToDelete(evt)}>
+                              <Trash2 /> Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -234,6 +229,14 @@ export function EventList() {
           </p>
         )}
       </Card>
+
+      <DeleteConfirmation
+        open={toDelete != null}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        title={`Delete "${toDelete?.title}"?`}
+        description="Events with paid bookings can't be deleted — reject them instead."
+        onConfirm={() => toDelete && handleDelete(toDelete)}
+      />
     </div>
   );
 }
