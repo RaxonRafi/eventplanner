@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { isAdmin, isOrganizer } from "@/lib/auth";
+import { getAuth, isAdmin, isOrganizer } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -21,9 +21,17 @@ export async function POST(req: NextRequest) {
   if (!isAdmin(req) && !isOrganizer(req))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  const auth = getAuth(req);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const price = Number(body?.price);
+  if (!body?.eventId || name.length < 2 || !(price > 0))
+    return NextResponse.json({ error: "eventId, name and a positive price are required" }, { status: 400 });
+  const event = await prisma.event.findUnique({ where: { id: body.eventId }, select: { organizerId: true } });
+  if (!event || (!isAdmin(req) && event.organizerId !== auth?.id))
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
   try {
-    const eventPackage = await prisma.eventPackage.create({ data: body });
+    const eventPackage = await prisma.eventPackage.create({ data: { eventId: body.eventId, name, price } });
     return NextResponse.json(eventPackage);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });

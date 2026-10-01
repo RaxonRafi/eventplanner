@@ -13,58 +13,55 @@ export interface Faq5Props {
 
 const defaultFaqs: FaqItem[] = [
   {
-    question: "How do I create an event?",
+    question: "How do I book an event?",
     answer:
-      "Go to Dashboard → Events → Create Event. Add title, date, location, capacity, and publish. You can attach one or more packages for pricing (e.g., General, VIP).",
-  },
-  {
-    question: "Who can create or edit events?",
-    answer:
-      "Admins (and Organizers if enabled) can create and manage events. Regular users can RSVP and manage their own reservations only.",
-  },
-  {
-    question: "How do packages and pricing work?",
-    answer:
-      "Each event can have multiple packages with different prices and benefits. Users select a package during RSVP; the amount is used to generate a payment session.",
-  },
-  {
-    question: "How do RSVPs and payments work?",
-    answer:
-      "When a user RSVPs, we create a pending reservation and an unpaid payment record. After a successful SSLCommerz payment, the payment is marked PAID and the RSVP status becomes CONFIRMED.",
-  },
-  {
-    question: "Can attendees cancel their RSVP?",
-    answer:
-      "Yes. Users can cancel from My Reservations before the event date. If you support refunds, an admin/organizer can process them according to your policy.",
+      "Open any event from Browse events, pick a ticket package and click Book now. You'll be taken to SSLCommerz to pay; once the payment succeeds your booking is confirmed instantly and a receipt is emailed to you.",
   },
   {
     question: "What payment methods are supported?",
     answer:
-      "We integrate with SSLCommerz (sandbox/live). It supports cards, mobile banking, and internet banking based on your merchant configuration.",
+      "Payments are processed by SSLCommerz, which supports cards (Visa, Mastercard, Amex), mobile banking and internet banking.",
+  },
+  {
+    question: "My payment failed or I cancelled it — what now?",
+    answer:
+      "You haven't been charged and your seat isn't confirmed. Just open the event again and book — you can retry as many times as you need.",
+  },
+  {
+    question: "Where can I see my bookings?",
+    answer:
+      "Sign in and open Dashboard → My RSVPs. You'll also get a notification in the bell menu whenever a booking is confirmed.",
+  },
+  {
+    question: "How do I create an event?",
+    answer:
+      "Register as an Organizer, then go to Dashboard → Create Event. Add the details, a banner image and one or more ticket packages. An admin reviews new events before they're published.",
+  },
+  {
+    question: "Can I edit my event after publishing?",
+    answer:
+      "Yes. Organizers can edit their events from Dashboard → My Events at any time. Packages that already have bookings can be renamed or repriced but not removed, and capacity can't go below the seats already sold.",
+  },
+  {
+    question: "How much does it cost to sell tickets?",
+    answer:
+      "Listing an event is free. A 20% platform fee is deducted from each booking — attendees pay the package price you set and you receive the remaining 80%.",
   },
   {
     question: "How is event capacity enforced?",
     answer:
-      "Capacity is checked when the RSVP is created and revalidated on payment success. Once the confirmed count reaches capacity, new RSVPs are blocked.",
-  },
-  {
-    question: "Where can I see all RSVPs?",
-    answer:
-      "Admins can view all RSVPs in the Admin panel (with filters and pagination). Organizers can view RSVPs for their own events. Users can see only their own RSVPs.",
+      "Only confirmed (paid) bookings count toward capacity. Once an event is full, booking is closed automatically.",
   },
 ];
 
 const Faq = ({
-  heading = "Eventers — Common Questions",
-  description = "Everything you need to know about creating events, RSVPs, and payments.",
+  heading = "Frequently asked questions",
+  description = "Everything you need to know about booking, payments and hosting events.",
   faqs = defaultFaqs,
 }: Faq5Props) => {
   return (
-    <section className="relative min-h-screen bg-background py-32">
-      <div
-        className="pointer-events-none absolute inset-0 select-none bg-grid"
-      />
-      <div className="container mx-auto px-10 lg:px-16 relative z-10">
+    <section className="relative py-16 md:py-20">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center">
           <h1 className="mt-4 text-4xl font-semibold">{heading}</h1>
           <p className="mt-6 font-medium text-muted-foreground">

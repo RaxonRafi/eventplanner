@@ -64,9 +64,8 @@ export default function EventsPage() {
   const totalPages: number = data?.meta?.totalPages ?? 1;
 
   return (
-    <section className="relative min-h-screen bg-background py-16 md:py-24">
-      <div className="pointer-events-none absolute inset-0 select-none bg-grid [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
-      <div className="container relative z-10 mx-auto px-4 lg:px-16">
+    <section className="relative pb-20 pt-10 md:pt-14">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
         <div className="mb-10 flex flex-col items-center text-center">
           <div className="mb-4 flex justify-center">
             <HoverBorderGradient

@@ -63,12 +63,8 @@ export function FeaturedEvents({
   const items = events ?? apiItems;
 
   return (
-    <section className="relative min-h-screen bg-background py-32">
-      {/* background grid */}
-      <div
-        className="pointer-events-none absolute inset-0 select-none bg-grid"
-      />
-      <div className="container mx-auto z-10 relative flex flex-col items-center gap-16 lg:px-16">
+    <section className="relative py-16 md:py-20">
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center gap-12 px-4 md:px-8">
         <div className="text-center">
           <div className="mb-6 flex justify-center text-center">
             <HoverBorderGradient

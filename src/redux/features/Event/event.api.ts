@@ -48,6 +48,21 @@ export const eventApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["EVENT"],
     }),
+    updateEvent: builder.mutation({
+      query: ({ id, ...eventInfo }: { id: string } & Record<string, unknown>) => ({
+        url: `/api/events/${id}`,
+        method: "PATCH",
+        data: eventInfo,
+      }),
+      invalidatesTags: ["EVENT"],
+    }),
+    deleteEvent: builder.mutation({
+      query: (id: string) => ({
+        url: `/api/events/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["EVENT"],
+    }),
     updateEventStatus: builder.mutation({
       query: ({ id, status }: { id: string; status: EventStatus }) => ({
         url: `/api/events/${id}/status`,
@@ -86,6 +101,8 @@ export const {
   usePublicEventsQuery,
   useEventByIdQuery,
   useUpdateEventStatusMutation,
+  useUpdateEventMutation,
+  useDeleteEventMutation,
   useUploadBannerMutation,
   useAdminStatsQuery,
 } = eventApi;

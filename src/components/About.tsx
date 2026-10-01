@@ -70,19 +70,15 @@ const About = ({
   achievements = defaultAchievements,
 }: AboutProps = {}) => {
   return (
-    <section className="relative min-h-screen bg-background py-32">
-      {/* background grid */}
-      <div
-        className="pointer-events-none absolute inset-0 select-none bg-grid"
-      />
+    <section className="relative py-16 md:py-20">
 
-      <div className="relative z-10 container mx-auto px-6">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
         {/* heading */}
         <div className="mb-16 text-center max-w-3xl mx-auto">
-          <h2 className="bg-gradient-to-b from-neutral-50 to-neutral-400 bg-clip-text text-4xl md:text-6xl font-bold text-transparent">
+          <h2 className="bg-gradient-to-b from-neutral-900 to-neutral-500 bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl dark:from-neutral-50 dark:to-neutral-400">
             {title}
           </h2>
-          <p className="mt-4 text-lg text-neutral-300">{description}</p>
+          <p className="mt-4 text-lg text-muted-foreground">{description}</p>
         </div>
 
         {/* Wobble Card Layout */}
@@ -140,7 +136,7 @@ const About = ({
         {/* End Wobble Card Layout */}
 
         {/* achievements (Cleaned up, no EvervaultCard) */}
-        <div className="mt-32 w-full">
+        <div className="mt-16 w-full">
             {/* Original achievements div restored */}
             <div className="relative overflow-hidden rounded-xl bg-card/80 p-10 md:p-16 shadow-xl border">
                 

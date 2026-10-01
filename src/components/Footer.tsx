@@ -1,137 +1,69 @@
-import React from "react";
-import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
+import Link from "next/link";
 import Logo from "../../public/svg/Logo";
 
-interface Footer7Props {
-  logo?: {
-    url: string;
-    src: string;
-    alt: string;
-    title: string;
-  };
-  sections?: Array<{
-    title: string;
-    links: Array<{ name: string; href: string }>;
-  }>;
-  description?: string;
-  socialLinks?: Array<{
-    icon: React.ReactElement;
-    href: string;
-    label: string;
-  }>;
-  copyright?: string;
-  legalLinks?: Array<{
-    name: string;
-    href: string;
-  }>;
-}
-
-const defaultSections = [
+const sections = [
   {
-    title: "Product",
+    title: "Explore",
     links: [
-      { name: "Overview", href: "#" },
-      { name: "Pricing", href: "#" },
-      { name: "Marketplace", href: "#" },
-      { name: "Features", href: "#" },
+      { name: "Home", href: "/" },
+      { name: "Browse events", href: "/events" },
+      { name: "About", href: "/#about" },
+      { name: "FAQ", href: "/#faq" },
     ],
   },
   {
-    title: "Company",
+    title: "Organizers",
     links: [
-      { name: "About", href: "#" },
-      { name: "Team", href: "#" },
-      { name: "Blog", href: "#" },
-      { name: "Careers", href: "#" },
+      { name: "Create an event", href: "/dashboard/events/create" },
+      { name: "My events", href: "/dashboard/events" },
+      { name: "Payments", href: "/dashboard/payments" },
     ],
   },
   {
-    title: "Resources",
+    title: "Account",
     links: [
-      { name: "Help", href: "#" },
-      { name: "Sales", href: "#" },
-      { name: "Advertise", href: "#" },
-      { name: "Privacy", href: "#" },
+      { name: "Sign in", href: "/login" },
+      { name: "Create account", href: "/register" },
+      { name: "My bookings", href: "/dashboard/rsvps" },
     ],
   },
 ];
 
-const defaultSocialLinks = [
-  { icon: <FaInstagram className="size-5" />, href: "#", label: "Instagram" },
-  { icon: <FaFacebook className="size-5" />, href: "#", label: "Facebook" },
-  { icon: <FaTwitter className="size-5" />, href: "#", label: "Twitter" },
-  { icon: <FaLinkedin className="size-5" />, href: "#", label: "LinkedIn" },
-];
-
-const defaultLegalLinks = [
-  { name: "Terms and Conditions", href: "#" },
-  { name: "Privacy Policy", href: "#" },
-];
-
-const Footer = ({
-  sections = defaultSections,
-  description = "A collection of components for your startup business or side project.",
-  socialLinks = defaultSocialLinks,
-  copyright = "© 2025 muhammadrafi.vercel.app. All rights reserved.",
-  legalLinks = defaultLegalLinks,
-}: Footer7Props) => {
+export function Footer() {
   return (
-    <section className="relative bg-background">
-      <div
-        className="pointer-events-none absolute inset-0 select-none bg-grid"
-      />
-      <div className="container mx-auto px-10 lg:px-16 relative z-10">
-        <div className="flex w-full flex-col justify-between gap-10 lg:flex-row lg:items-start lg:text-left">
-          <div className="flex w-full flex-col justify-between gap-6 lg:items-start">
-            {/* Logo */}
-            <div className="flex items-center gap-2 lg:justify-start">
+    <footer className="relative border-t">
+      <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div className="space-y-4">
+            <Link href="/" className="flex w-fit items-center gap-2">
               <Logo />
-              <h2 className="text-xl font-semibold">Eventers</h2>
-            </div>
-            <p className="text-muted-foreground max-w-[70%] text-sm">
-              {description}
+              <span className="text-xl font-semibold">Eventers</span>
+            </Link>
+            <p className="max-w-xs text-sm text-muted-foreground">
+              Discover events, book tickets in seconds, and run your own events with secure
+              payments built in.
             </p>
-            <ul className="text-muted-foreground flex items-center space-x-6">
-              {socialLinks.map((social, idx) => (
-                <li key={idx} className="hover:text-primary font-medium">
-                  <a href={social.href} aria-label={social.label}>
-                    {social.icon}
-                  </a>
-                </li>
-              ))}
-            </ul>
           </div>
-          <div className="grid w-full gap-6 md:grid-cols-3 lg:gap-20">
-            {sections.map((section, sectionIdx) => (
-              <div key={sectionIdx}>
-                <h3 className="mb-4 font-bold">{section.title}</h3>
-                <ul className="text-muted-foreground space-y-3 text-sm">
-                  {section.links.map((link, linkIdx) => (
-                    <li
-                      key={linkIdx}
-                      className="hover:text-primary font-medium"
-                    >
-                      <a href={link.href}>{link.name}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {sections.map((section) => (
+            <div key={section.title}>
+              <h3 className="mb-4 text-sm font-semibold">{section.title}</h3>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                {section.links.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="transition-colors hover:text-foreground">
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="text-muted-foreground mt-8 flex flex-col justify-between gap-4 border-t py-8 text-xs font-medium md:flex-row md:items-center md:text-left">
-          <p className="order-2 lg:order-1">{copyright}</p>
-          <ul className="order-1 flex flex-col gap-2 md:order-2 md:flex-row">
-            {legalLinks.map((link, idx) => (
-              <li key={idx} className="hover:text-primary">
-                <a href={link.href}> {link.name}</a>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-10 flex flex-col gap-2 border-t pt-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
+          <p>© {new Date().getFullYear()} Eventers. All rights reserved.</p>
+          <p>Payments secured by SSLCommerz</p>
         </div>
       </div>
-    </section>
+    </footer>
   );
-};
-
-export { Footer };
+}
