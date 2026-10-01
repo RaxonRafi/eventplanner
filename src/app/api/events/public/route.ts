@@ -12,9 +12,22 @@ export async function GET(req: Request) {
       Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10))
     );
     const q = searchParams.get("q")?.trim() || undefined;
+    // sort: latest (newest first, default) | soonest (date asc) | date_desc
+    const sort = searchParams.get("sort") ?? "latest";
+    // when: all (default) | upcoming | past
+    const when = searchParams.get("when") ?? "all";
+    const now = new Date();
+    const orderBy =
+      sort === "soonest"
+        ? [{ date: "asc" as const }]
+        : sort === "date_desc"
+          ? [{ date: "desc" as const }]
+          : [{ createdAt: "desc" as const }, { date: "desc" as const }];
 
     const where: any = {
       status: EventStatus.APPROVED,
+      ...(when === "upcoming" ? { date: { gte: now } } : {}),
+      ...(when === "past" ? { date: { lt: now } } : {}),
       ...(q
         ? {
             OR: [
@@ -30,7 +43,7 @@ export async function GET(req: Request) {
       prisma.event.count({ where }),
       prisma.event.findMany({
         where,
-        orderBy: { date: "asc" },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
         select: {
@@ -40,12 +53,17 @@ export async function GET(req: Request) {
           date: true,
           location: true,
           bannerImage: true,
+          capacity: true,
+          packages: { select: { price: true }, orderBy: { price: "asc" }, take: 1 },
         },
       }),
     ]);
 
     return NextResponse.json({
-      data: items,
+      data: items.map(({ packages, ...e }) => ({
+        ...e,
+        minPrice: packages[0]?.price ?? null,
+      })),
       meta: {
         total,
         page,

@@ -32,7 +32,7 @@ export function RsvpList() {
     isLoading: meLoading,
     isError: meError,
   } = useUserInfoQuery(undefined);
-  const role = me?.role as string | undefined;
+  const role = me?.data?.role as string | undefined;
   const isUser = role === "USER";
   const roleKnown = Boolean(role) || meError; // consider role unknown only while loading
 
@@ -108,7 +108,7 @@ export function RsvpList() {
                     <td className="p-4 align-middle">{rsvp.event?.title}</td>
                     <td className="p-4 align-middle">
                       {rsvp.package
-                        ? `${rsvp.package.name} ($${rsvp.package.price})`
+                        ? `${rsvp.package.name} (BDT ${rsvp.package.price})`
                         : "-"}
                     </td>
                     <td className="p-4 align-middle">{rsvp.status}</td>

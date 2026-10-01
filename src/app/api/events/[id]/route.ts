@@ -21,7 +21,7 @@ export async function GET(
       include: {
         packages: true,
         organizer: { select: { id: true, name: true } },
-        _count: { select: { rsvps: true } },
+        _count: { select: { rsvps: { where: { status: "CONFIRMED" } } } },
       },
     });
     if (!event)

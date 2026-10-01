@@ -25,14 +25,18 @@ export const eventApi = baseApi.injectEndpoints({
         page = 1,
         limit = 3,
         q,
+        sort,
+        when,
       }: {
         page?: number;
         limit?: number;
         q?: string;
+        sort?: "latest" | "soonest" | "date_desc";
+        when?: "all" | "upcoming" | "past";
       }) => ({
         url: "/api/events/public",
         method: "GET",
-        params: { page, limit, q },
+        params: { page, limit, q, sort, when },
       }),
       providesTags: ["EVENT"],
     }),

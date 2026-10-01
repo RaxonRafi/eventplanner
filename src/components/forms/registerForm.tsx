@@ -75,12 +75,11 @@ export function RegisterForm({
     };
     try {
       const result = await register(userInfo).unwrap();
-      console.log(result);
-      toast.success("Registered Successfully!");
+      toast.success(`Welcome, ${result?.name ?? "friend"}! Please sign in.`);
       router.push("/login");
     } catch (error) {
-      console.log(error);
-      toast.error("Registration Failed!");
+      const e = error as { data?: { error?: string } };
+      toast.error(e?.data?.error || "Registration failed. Please try again.");
     }
   };
 

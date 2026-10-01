@@ -40,9 +40,9 @@ export async function POST(req: Request) {
   // load + validate event/package
   const event = await prisma.event.findUnique({
     where: { id: body.eventId },
-    select: { id: true, title: true, date: true, capacity: true },
+    select: { id: true, title: true, date: true, capacity: true, status: true },
   });
-  if (!event)
+  if (!event || event.status !== "APPROVED")
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   if (event.date < new Date())
     return NextResponse.json(

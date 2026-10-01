@@ -23,7 +23,8 @@ import {
 } from "@/redux/features/Event/event.api";
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, Info, X } from "lucide-react";
+import { PLATFORM_FEE_RATE } from "@/lib/fees";
 
 const packageSchema = z.object({
   name: z.string().min(2, { message: "Package name is required" }),
@@ -66,6 +67,7 @@ export function CreateEventForm() {
     control: form.control,
     name: "packages",
   });
+  const watchedPackages = form.watch("packages");
 
   const handleBannerSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -262,10 +264,10 @@ export function CreateEventForm() {
 
         {/* Packages */}
         <div>
-          <FormLabel>Packages</FormLabel>
+          <FormLabel>Packages (BDT)</FormLabel>
           <div className="space-y-3 mt-2">
             {fields.map((pkg, index) => (
-              <div key={pkg.id} className="flex items-center gap-3">
+              <div key={pkg.id} className="flex flex-wrap items-start gap-3">
                 <FormField
                   control={form.control}
                   name={`packages.${index}.name`}
@@ -303,13 +305,25 @@ export function CreateEventForm() {
                   type="button"
                   variant="destructive"
                   size="sm"
+                  className="mt-0.5"
                   onClick={() => remove(index)}
                 >
                   Remove
                 </Button>
+                {(watchedPackages?.[index]?.price ?? 0) > 0 && (
+                  <p className="basis-full text-xs text-muted-foreground">
+                    You receive BDT{" "}
+                    {(watchedPackages[index].price * (1 - PLATFORM_FEE_RATE)).toFixed(2)} per booking
+                  </p>
+                )}
               </div>
             ))}
           </div>
+          <p className="mt-3 flex items-start gap-2 rounded-lg border bg-muted/50 p-3 text-xs text-muted-foreground">
+            <Info className="mt-0.5 size-3.5 shrink-0" />
+            A {PLATFORM_FEE_RATE * 100}% platform fee is deducted from every booking. Attendees pay
+            the package price shown; you receive the remaining {100 - PLATFORM_FEE_RATE * 100}%.
+          </p>
           <Button
             type="button"
             variant="outline"

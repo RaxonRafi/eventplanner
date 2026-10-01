@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useLoginMutation } from "@/redux/features/auth/auth.api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -23,20 +23,26 @@ export function LoginForm({
 }: React.ComponentProps<"form">) {
   const form = useForm({
     defaultValues: {
-      email: "admin1@gmail.com",
-      password: "123456",
+      email: "",
+      password: "",
     },
   });
 
   const [login, { isLoading }] = useLoginMutation();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Only same-site paths, to avoid an open redirect
+  const redirectParam = searchParams.get("redirect");
+  const redirectTo =
+    redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
+      ? redirectParam
+      : "/dashboard";
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     try {
       const res = await login(data).unwrap();
-      console.log(res);
       if (res?.user && res?.token) {
-        toast.success("Logged in successfully ✅");
-        router.push("/dashboard");
+        toast.success("Welcome back!");
+        router.push(redirectTo);
       } else {
         toast.error("Login failed. Please try again.");
       }

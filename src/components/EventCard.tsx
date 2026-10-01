@@ -2,28 +2,31 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import {
+  ArrowLeft,
   CalendarDays,
+  CalendarPlus,
+  Check,
   Clock,
-  Download,
+  Link2,
+  Loader2,
   MapPin,
-  Share2,
   Ticket,
   Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-// Reusable preview card available for listing contexts
-// import { EventPreviewCard, EventPreview } from "@/components/EventPreviewCard";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type EventPackage = {
   id: string;
   name: string;
   price: number; // BDT
   description?: string;
-  ctaText?: string; // e.g. "Reserve"
 };
 
 type Organizer = {
@@ -36,329 +39,236 @@ interface EventDetailsProps {
   event: {
     id: string;
     title: string;
-    coverImage?: string; // /images/event-cover.jpg
-    dateLabel: string; // preformatted: "Sat, Oct 5, 2025 • 10:00 AM"
-    durationLabel?: string; // "6 hours" (optional)
-    location: string; // "Dhaka, Bangladesh"
-    capacity?: number; // optional
-    descriptionHtml: string; // trusted HTML (sanitized upstream)
+    coverImage: string;
+    date: Date;
+    location: string;
+    capacity?: number;
+    seatsTaken?: number;
+    description: string; // plain text
     organizer: Organizer;
     packages: EventPackage[];
-    readTimeLabel?: string; // optional helper like "2 min read" (can omit)
-    shareLinks?: {
-      platform: "instagram" | "linkedin" | "x" | "facebook";
-      href: string;
-    }[];
-    // Optional helpful links:
-    venueMapUrl?: string;
-    guidelinesUrl?: string;
   };
-  onSelectPackage?: (pkg: EventPackage) => void; // If you want to open RSVP modal
-  detailsCtaUrl?: string; // Fallback RSVP link if no handler provided
-  rsvpDisabledReason?: string; // e.g. "Event ended" — disables RSVP buttons and shows this label
+  /** Called with the chosen package; resolves when the redirect to payment has started (or failed). */
+  onSelectPackage: (pkg: EventPackage) => Promise<void>;
+  rsvpDisabledReason?: string; // e.g. "Event ended" — disables booking and shows this label
 }
 
-export default function EventDetails({
-  event,
-  onSelectPackage,
-  detailsCtaUrl = "/events",
-  rsvpDisabledReason,
-}: EventDetailsProps) {
-  const {
-    title,
-    coverImage = "/images/about-1.jpg",
-    dateLabel,
-    durationLabel,
+const fmtDate = (d: Date) =>
+  d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+const fmtTime = (d: Date) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+function googleCalendarUrl(title: string, start: Date, location: string, details: string) {
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // assume 2 hours
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${fmt(start)}/${fmt(end)}`,
     location,
-    capacity,
-    descriptionHtml,
-    organizer,
-    packages,
-    readTimeLabel,
-    shareLinks = [],
-    venueMapUrl,
-    guidelinesUrl,
-  } = event;
+    details: details.slice(0, 500),
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
+}
+
+export default function EventDetails({ event, onSelectPackage, rsvpDisabledReason }: EventDetailsProps) {
+  const { title, coverImage, date, location, capacity, seatsTaken = 0, description, organizer, packages } =
+    event;
+  const [selectedId, setSelectedId] = useState(packages[0]?.id);
+  const [booking, setBooking] = useState(false);
+  const selected = packages.find((p) => p.id === selectedId) ?? packages[0];
+  const seatsLeft = typeof capacity === "number" ? Math.max(0, capacity - seatsTaken) : undefined;
+  const soldOut = seatsLeft === 0;
+  const disabledReason = rsvpDisabledReason ?? (soldOut ? "Sold out" : undefined);
+
+  const book = async () => {
+    if (!selected || disabledReason) return;
+    setBooking(true);
+    try {
+      await onSelectPackage(selected);
+    } finally {
+      setBooking(false);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Event link copied to clipboard");
+    } catch {
+      toast.error("Couldn't copy the link");
+    }
+  };
 
   return (
-    <section className="py-32">
-      <div className="container px-10 grid md:grid-cols-12">
-        {/* Sidebar */}
-        <aside className="order-last md:order-none md:col-span-4 lg:col-span-3">
-          <div className="flex flex-col gap-6">
-            {/* Event meta */}
-            <Card className="shadow-sm">
-              <CardHeader className="border-b bg-muted/50 px-5 py-4">
-                <h3 className="flex items-center text-sm font-semibold">
-                  <CalendarDays className="text-muted-foreground mr-2.5 size-3.5" />
-                  Event Details
-                </h3>
-              </CardHeader>
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start gap-3">
-                  <CalendarDays className="size-4 mt-0.5 text-muted-foreground" />
-                  <div className="text-sm">
-                    <p className="font-medium">{dateLabel}</p>
-                    {durationLabel && (
-                      <p className="text-muted-foreground flex items-center gap-2">
-                        <Clock className="size-3.5" /> {durationLabel}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <MapPin className="size-4 mt-0.5 text-muted-foreground" />
-                  <div className="text-sm">
-                    <p className="font-medium">{location}</p>
-                    {venueMapUrl && (
-                      <Link
-                        href={venueMapUrl}
-                        className="text-primary hover:underline text-xs"
-                      >
-                        View on map
-                      </Link>
-                    )}
-                  </div>
-                </div>
-
-                {typeof capacity === "number" && (
-                  <div className="flex items-start gap-3">
-                    <Users className="size-4 mt-0.5 text-muted-foreground" />
-                    <div className="text-sm">
-                      <p className="font-medium">Capacity</p>
-                      <p className="text-muted-foreground">{capacity} seats</p>
-                    </div>
-                  </div>
-                )}
-
-                <Separator />
-
-                {/* Organizer */}
-                <div className="flex items-center gap-3">
-                  {organizer.avatarUrl ? (
-                    <Image
-                      src={organizer.avatarUrl}
-                      alt={organizer.name}
-                      width={36}
-                      height={36}
-                      className="rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="size-9 rounded-full bg-muted" />
-                  )}
-                  <div className="text-sm">
-                    <p className="font-medium">Organized by</p>
-                    <p className="text-muted-foreground">{organizer.name}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Ticket / Packages */}
-            <Card className="shadow-sm">
-              <CardHeader className="border-b bg-muted/50 px-5 py-4">
-                <h3 className="flex items-center text-sm font-semibold">
-                  <Ticket className="text-muted-foreground mr-2.5 size-3.5" />
-                  Packages
-                </h3>
-              </CardHeader>
-              <CardContent className="p-5 space-y-3">
-                {packages.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No packages available right now.
-                  </p>
-                )}
-                {packages.map((pkg) => (
-                  <div
-                    key={pkg.id}
-                    className="border rounded-lg p-4 flex items-start justify-between gap-4"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">{pkg.name}</p>
-                        <Badge variant="secondary">
-                          BDT {pkg.price.toFixed(0)}
-                        </Badge>
-                      </div>
-                      {pkg.description && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {pkg.description}
-                        </p>
-                      )}
-                    </div>
-                    {rsvpDisabledReason ? (
-                      <Button size="sm" disabled>
-                        {rsvpDisabledReason}
-                      </Button>
-                    ) : onSelectPackage ? (
-                      <Button size="sm" onClick={() => onSelectPackage(pkg)}>
-                        {pkg.ctaText ?? "RSVP"}
-                      </Button>
-                    ) : (
-                      <Button asChild size="sm">
-                        <Link
-                          href={`${detailsCtaUrl}/${event.id}?pkg=${pkg.id}`}
-                        >
-                          {pkg.ctaText ?? "RSVP"}
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {guidelinesUrl && (
-                  <p className="text-[11px] text-muted-foreground mt-2">
-                    Please review our{" "}
-                    <Link
-                      href={guidelinesUrl}
-                      className="text-primary hover:underline"
-                    >
-                      event guidelines
-                    </Link>{" "}
-                    before booking.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Download / Share */}
-            <Card className="shadow-sm">
-              <CardHeader className="border-b bg-muted/50 px-5 py-4">
-                <h3 className="flex items-center text-sm font-semibold">
-                  <Share2 className="text-muted-foreground mr-2.5 size-3.5" />
-                  Share this event
-                </h3>
-              </CardHeader>
-              <CardContent className="p-5">
-                <ul className="flex items-center gap-2">
-                  {shareLinks.length ? (
-                    shareLinks.map((s) => (
-                      <li key={s.platform}>
-                        <Link
-                          href={s.href}
-                          className="border-border bg-muted/50 hover:bg-muted flex size-10 items-center justify-center rounded-full border transition-colors"
-                          aria-label={`Share on ${s.platform}`}
-                          target="_blank"
-                        >
-                          {/* You can swap to icons per platform if you prefer */}
-                          <span className="text-xs capitalize">
-                            {s.platform}
-                          </span>
-                        </Link>
-                      </li>
-                    ))
-                  ) : (
-                    <>
-                      <li className="text-xs text-muted-foreground">
-                        No share links configured
-                      </li>
-                    </>
-                  )}
-                </ul>
-
-                <Separator className="my-4" />
-
-                <div className="space-y-2">
-                  <Button className="w-full justify-between" variant="outline">
-                    Download Brochure
-                    <Download className="ml-2 size-4" />
-                  </Button>
-                  <Button className="w-full justify-between" variant="ghost">
-                    Add to Calendar
-                    <CalendarDays className="ml-2 size-4" />
-                  </Button>
-                  {readTimeLabel && (
-                    <p className="text-muted-foreground mt-4 text-center text-xs">
-                      Read time: {readTimeLabel}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+    <div className="pb-20">
+      {/* Hero */}
+      <div className="relative h-[42vh] min-h-72 w-full overflow-hidden bg-muted">
+        <Image src={coverImage} alt={title} fill priority sizes="100vw" className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="container relative mx-auto flex h-full flex-col justify-end px-4 pb-8 lg:px-16">
+          <Link
+            href="/events"
+            className="mb-auto mt-6 inline-flex w-fit items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-sm backdrop-blur transition-colors hover:bg-background"
+          >
+            <ArrowLeft className="size-4" /> All events
+          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Badge className="gap-1.5 bg-background/85 text-foreground backdrop-blur hover:bg-background/85">
+              <CalendarDays className="size-3.5" /> {fmtDate(date)}
+            </Badge>
+            <Badge className="gap-1.5 bg-background/85 text-foreground backdrop-blur hover:bg-background/85">
+              <MapPin className="size-3.5" /> {location}
+            </Badge>
+            {rsvpDisabledReason === "Event ended" && <Badge variant="secondary">Ended</Badge>}
           </div>
-        </aside>
-
-        {/* Main content */}
-        <div className="md:col-span-7 md:col-start-5 lg:col-start-6">
-          {/* Cover */}
-          <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
-            <Image
-              src={coverImage}
-              alt={title}
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-
-          <article className="prose dark:prose-invert prose-sm max-w-none">
-            <h1>{title}</h1>
-
-            {/* Top chips */}
-            <div className="not-prose mt-3 flex flex-wrap items-center gap-3">
-              <Badge
-                variant="secondary"
-                className="inline-flex items-center gap-2"
-              >
-                <CalendarDays className="size-3.5" /> {dateLabel}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="inline-flex items-center gap-2"
-              >
-                <MapPin className="size-3.5" /> {location}
-              </Badge>
-              {durationLabel && (
-                <Badge
-                  variant="outline"
-                  className="inline-flex items-center gap-2"
-                >
-                  <Clock className="size-3.5" /> {durationLabel}
-                </Badge>
-              )}
-            </div>
-
-            {/* Description (plain text from the create-event form) */}
-            <p className="mt-6 whitespace-pre-line">{descriptionHtml}</p>
-
-            {/* Quick CTA */}
-            {packages.length > 0 && (
-              <div className="not-prose mt-8 flex flex-wrap gap-3">
-                {packages.slice(0, 2).map((pkg) => (
-                  <Button
-                    key={pkg.id}
-                    onClick={() => onSelectPackage?.(pkg)}
-                    asChild={!onSelectPackage && !rsvpDisabledReason}
-                    disabled={!!rsvpDisabledReason}
-                  >
-                    {rsvpDisabledReason ? (
-                      <span>
-                        {pkg.name} — {rsvpDisabledReason}
-                      </span>
-                    ) : onSelectPackage ? (
-                      <span>
-                        RSVP — {pkg.name} (BDT {pkg.price.toFixed(0)})
-                      </span>
-                    ) : (
-                      <Link href={`${detailsCtaUrl}/${event.id}?pkg=${pkg.id}`}>
-                        RSVP — {pkg.name} (BDT {pkg.price.toFixed(0)})
-                      </Link>
-                    )}
-                  </Button>
-                ))}
-                <Button variant="outline" asChild>
-                  <Link href="/events">See all events</Link>
-                </Button>
-              </div>
-            )}
-
-            {/* Optional sections: agenda, FAQs, etc. (add as you like) */}
-          </article>
-
-          {/* Related/More events (example usage of reusable card) */}
-          {/* You can map other events and render <EventPreviewCard evt={...} /> here if needed */}
+          <h1 className="mt-3 max-w-4xl text-3xl font-bold tracking-tight md:text-5xl">{title}</h1>
         </div>
       </div>
-    </section>
+
+      <div className="container mx-auto grid gap-8 px-4 pt-8 lg:grid-cols-[1fr_380px] lg:px-16">
+        {/* Main */}
+        <div className="min-w-0 space-y-10">
+          <section>
+            <h2 className="mb-3 text-xl font-semibold">About this event</h2>
+            <p className="whitespace-pre-line leading-relaxed text-muted-foreground">
+              {description || "No description provided."}
+            </p>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-xl font-semibold">Tickets</h2>
+            {packages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No packages available right now.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Ticket packages">
+                {packages.map((pkg) => {
+                  const active = pkg.id === selected?.id;
+                  return (
+                    <button
+                      key={pkg.id}
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setSelectedId(pkg.id)}
+                      className={cn(
+                        "flex items-start justify-between gap-4 rounded-xl border p-4 text-left transition-all",
+                        active ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-foreground/30"
+                      )}
+                    >
+                      <div>
+                        <p className="font-semibold">{pkg.name}</p>
+                        {pkg.description && (
+                          <p className="mt-1 text-xs text-muted-foreground">{pkg.description}</p>
+                        )}
+                        <p className="mt-2 text-lg font-bold">BDT {pkg.price.toLocaleString()}</p>
+                      </div>
+                      <span
+                        className={cn(
+                          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border",
+                          active && "border-primary bg-primary text-primary-foreground"
+                        )}
+                      >
+                        {active && <Check className="size-3" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-xl font-semibold">Organizer</h2>
+            <div className="flex items-center gap-3">
+              {organizer.avatarUrl ? (
+                <Image
+                  src={organizer.avatarUrl}
+                  alt={organizer.name}
+                  width={44}
+                  height={44}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                  {organizer.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <p className="font-medium">{organizer.name}</p>
+                <p className="text-sm text-muted-foreground">Event organizer</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Booking sidebar */}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <Card className="gap-0 py-0 shadow-lg">
+            <CardContent className="space-y-5 p-6">
+              <div>
+                <p className="text-sm text-muted-foreground">{selected ? selected.name : "Tickets"}</p>
+                <p className="text-3xl font-bold">
+                  {selected ? `BDT ${selected.price.toLocaleString()}` : "—"}
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <CalendarDays className="size-4 text-muted-foreground" />
+                  <span>{fmtDate(date)}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="size-4 text-muted-foreground" />
+                  <span>{fmtTime(date)}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin className="size-4 text-muted-foreground" />
+                  <span>{location}</span>
+                </div>
+                {seatsLeft !== undefined && (
+                  <div className="flex items-center gap-3">
+                    <Users className="size-4 text-muted-foreground" />
+                    <span>
+                      {soldOut ? "Sold out" : `${seatsLeft.toLocaleString()} of ${capacity!.toLocaleString()} seats left`}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <Button className="h-11 w-full text-base" disabled={!!disabledReason || !selected || booking} onClick={book}>
+                {booking ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" /> Redirecting to payment…
+                  </>
+                ) : disabledReason ? (
+                  disabledReason
+                ) : (
+                  <>
+                    <Ticket className="size-4" /> Book now
+                  </>
+                )}
+              </Button>
+              {!disabledReason && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Secure payment via SSLCommerz
+                </p>
+              )}
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <a href={googleCalendarUrl(title, date, location, description)} target="_blank" rel="noopener noreferrer">
+                    <CalendarPlus className="size-4" /> Calendar
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" onClick={copyLink}>
+                  <Link2 className="size-4" /> Share
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+    </div>
   );
 }
