@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { Role } from "@prisma/client";/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import jwt from "jsonwebtoken"
@@ -53,7 +54,7 @@ export async function PATCH(req: Request) {
   let userId = decoded.id
 
   // If admin, allow updating any user by id
-  const isAdmin = decoded.role === "ADMIN"
+  const isAdmin = decoded.role === Role.ADMIN
   if (isAdmin && body.id) {
     userId = body.id
   }

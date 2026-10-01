@@ -1,6 +1,6 @@
 import { DashboardOverview } from "@/components/DashboardOverview";
-import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { SidebarInset } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { redirect } from "next/navigation";
@@ -22,15 +22,8 @@ export default async function Page() {
 
   return (
     <SidebarInset>
-      <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mr-2 data-[orientation=vertical]:h-4"
-        />
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-      </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <PageHeader title="Dashboard" />
+      <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
         <DashboardOverview />
       </div>
     </SidebarInset>

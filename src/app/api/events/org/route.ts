@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";        // ⬅️ add this
+import { Prisma, Role } from "@prisma/client";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
 
-type JwtPayload = { id: string; role: "USER" | "ADMIN" | "ORGANIZER" | string };
+type JwtPayload = { id: string; role: Role };
 type SortField = "title" | "date" | "createdAt" | "location";
 
 export async function GET(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    if (user.role !== "ORGANIZER" && user.role !== "ADMIN") {
+    if (user.role !== Role.ORGANIZER && user.role !== Role.ADMIN) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

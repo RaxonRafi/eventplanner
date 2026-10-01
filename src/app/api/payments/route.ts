@@ -2,7 +2,7 @@
 import { getAuth } from "@/lib/auth";
 import { splitAmount } from "@/lib/fees";
 import prisma from "@/lib/prisma";
-import { PaymentStatus } from "@prisma/client";
+import { PaymentStatus, Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 /**
@@ -13,7 +13,7 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const auth = getAuth(req);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (auth.role !== "ADMIN" && auth.role !== "ORGANIZER")
+  if (auth.role !== Role.ADMIN && auth.role !== Role.ORGANIZER)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20));
 
-  const scope = auth.role === "ORGANIZER" ? { rsvp: { event: { organizerId: auth.id } } } : {};
+  const scope = auth.role === Role.ORGANIZER ? { rsvp: { event: { organizerId: auth.id } } } : {};
   const where = { ...scope, ...(status ? { status } : {}) };
 
   try {
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
       }),
     ]);
 
-    const paidGross = byStatus.find((s) => s.status === "PAID")?._sum.amount ?? 0;
+    const paidGross = byStatus.find((s) => s.status === PaymentStatus.PAID)?._sum.amount ?? 0;
     const counts = Object.fromEntries(byStatus.map((s) => [s.status, s._count._all]));
 
     return NextResponse.json({

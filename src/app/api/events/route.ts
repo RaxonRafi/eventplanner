@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { EventStatus } from "@prisma/client";
+import { EventStatus, RSVPStatus } from "@prisma/client";
 import { getAuth, isAdmin, isOrganizer } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     where,
     include: {
       packages: true,
-      _count: { select: { rsvps: { where: { status: "CONFIRMED" } } } },
+      _count: { select: { rsvps: { where: { status: RSVPStatus.CONFIRMED } } } },
       organizer: { select: { id: true, name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },

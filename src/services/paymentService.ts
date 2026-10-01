@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import axios from "axios";
 
+import { PaymentStatus, RSVPStatus } from "@prisma/client";
 // Support both naming styles to avoid .env mismatches
 const MODE = process.env.SSLCZ_MODE || process.env.SSL_MODE || "sandbox";
 const SSL_BASE =
@@ -102,7 +103,7 @@ export const SSLService = {
       where: { tranId },
       select: { status: true },
     });
-    if (existing?.status === "PAID")
+    if (existing?.status === PaymentStatus.PAID)
       return { ok: true as const, newlyPaid: false, vData: null };
 
     const validateURL = `${SSL_BASE}/validator/api/validationserverAPI.php`;
@@ -131,9 +132,9 @@ export const SSLService = {
     if (!isOK) {
       await prisma.payment
         .updateMany({
-          where: { tranId, status: { not: "PAID" } },
+          where: { tranId, status: { not: PaymentStatus.PAID } },
           data: {
-            status: "FAILED",
+            status: PaymentStatus.FAILED,
             paymentGatewayData: JSON.stringify(vData),
           },
         })
@@ -145,9 +146,9 @@ export const SSLService = {
     // transition atomic: if the browser callback and the IPN race, only one sees newlyPaid.
     const newlyPaid = await prisma.$transaction(async (tx) => {
       const { count } = await tx.payment.updateMany({
-        where: { tranId, status: { not: "PAID" } },
+        where: { tranId, status: { not: PaymentStatus.PAID } },
         data: {
-          status: "PAID",
+          status: PaymentStatus.PAID,
           paymentGatewayData: JSON.stringify(vData),
         },
       });
@@ -159,7 +160,7 @@ export const SSLService = {
       });
       await tx.rSVP.update({
         where: { id: payment.rsvpId },
-        data: { status: "CONFIRMED", paid: true },
+        data: { status: RSVPStatus.CONFIRMED, paid: true },
       });
       return true;
     });

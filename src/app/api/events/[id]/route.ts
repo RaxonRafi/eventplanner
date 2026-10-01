@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { EventStatus } from "@prisma/client";
+import { EventStatus, RSVPStatus, Role } from "@prisma/client";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { EventInput, firstIssue } from "@/lib/validators/event.validation";
 import prisma from "@/lib/prisma";
@@ -20,9 +20,12 @@ export async function GET(
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
-        packages: true,
+        packages: {
+          orderBy: { price: "asc" },
+          include: { _count: { select: { rsvps: true } } },
+        },
         organizer: { select: { id: true, name: true } },
-        _count: { select: { rsvps: { where: { status: "CONFIRMED" } } } },
+        _count: { select: { rsvps: { where: { status: RSVPStatus.CONFIRMED } } } },
       },
     });
     if (!event)
@@ -63,10 +66,10 @@ export async function PATCH(
       status: true,
       date: true,
       packages: { select: { id: true, name: true, _count: { select: { rsvps: true } } } },
-      _count: { select: { rsvps: { where: { status: "CONFIRMED" } } } },
+      _count: { select: { rsvps: { where: { status: RSVPStatus.CONFIRMED } } } },
     },
   });
-  const admin = auth.role === "ADMIN";
+  const admin = auth.role === Role.ADMIN;
   if (!event || (!admin && event.organizerId !== auth.id))
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
@@ -134,7 +137,7 @@ export async function DELETE(
     where: { id },
     select: { organizerId: true, _count: { select: { rsvps: { where: { paid: true } } } } },
   });
-  if (!event || (auth.role !== "ADMIN" && event.organizerId !== auth.id))
+  if (!event || (auth.role !== Role.ADMIN && event.organizerId !== auth.id))
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   if (event._count.rsvps > 0)
     return NextResponse.json(

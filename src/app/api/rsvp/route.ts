@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/prisma";
 import { SSLService } from "@/services/paymentService";
-import { PaymentStatus, RSVPStatus } from "@prisma/client";
+import { EventStatus, PaymentStatus, RSVPStatus, Role } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -11,7 +11,7 @@ import { z } from "zod";
 if (!process.env.NEXTAUTH_SECRET) throw new Error("NEXTAUTH_SECRET is not set");
 const JWT_SECRET = process.env.NEXTAUTH_SECRET;
 
-type JwtPayload = { id: string; role: "USER" | "ADMIN" | "ORGANIZER" | string };
+type JwtPayload = { id: string; role: Role };
 
 const CreateSchema = z.object({
   eventId: z.string().min(1),
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     where: { id: body.eventId },
     select: { id: true, title: true, date: true, capacity: true, status: true },
   });
-  if (!event || event.status !== "APPROVED")
+  if (!event || event.status !== EventStatus.APPROVED)
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   if (event.date < new Date())
     return NextResponse.json(
@@ -185,8 +185,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 })
   }
 
-  const isAdmin = user.role === "ADMIN"
-  const isOrganizer = user.role === "ORGANIZER"
+  const isAdmin = user.role === Role.ADMIN
+  const isOrganizer = user.role === Role.ORGANIZER
   if (!isAdmin && !isOrganizer) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }

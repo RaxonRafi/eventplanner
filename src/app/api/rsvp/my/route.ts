@@ -3,12 +3,12 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
-import { RSVPStatus } from "@prisma/client"
+import { RSVPStatus, Role } from "@prisma/client";
 
 if (!process.env.NEXTAUTH_SECRET) throw new Error("NEXTAUTH_SECRET is not set")
 const JWT_SECRET = process.env.NEXTAUTH_SECRET
 
-type JwtPayload = { id: string; role: "USER" | "ADMIN" | "ORGANIZER" | string }
+type JwtPayload = { id: string; role: Role }
 
 export async function GET(req: Request) {
   // --- Auth (any logged-in user) ---
