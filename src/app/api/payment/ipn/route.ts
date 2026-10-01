@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { notifyPaymentConfirmed } from "@/services/notificationService";
 import { SSLService } from "@/services/paymentService";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 /**
  * SSLCommerz IPN (Instant Payment Notification) — server-to-server.
@@ -20,6 +21,8 @@ export async function POST(req: Request) {
 
   try {
     const result = await SSLService.validatePayment({ valId, tranId });
+    // Notify/email once, after the response is sent (the other callback sees newlyPaid=false)
+    if (result.newlyPaid) after(() => notifyPaymentConfirmed(tranId, new URL(req.url).origin));
     return NextResponse.json({ ok: result.ok });
   } catch (e: any) {
     console.error("[payment/ipn]", e?.message);

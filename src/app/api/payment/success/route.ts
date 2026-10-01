@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { notifyPaymentConfirmed } from "@/services/notificationService";
 import { SSLService } from "@/services/paymentService";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 // SSLCommerz POSTs the customer's browser here (form-encoded) after a successful payment.
 // The payment is only marked PAID once val_id has been verified with the validation API.
@@ -21,6 +22,8 @@ export async function POST(req: Request) {
 
   try {
     const result = await SSLService.validatePayment({ valId, tranId });
+    // Notify/email once, after the response is sent (the other callback sees newlyPaid=false)
+    if (result.newlyPaid) after(() => notifyPaymentConfirmed(tranId, url.origin));
     return redirect(result.ok ? "success" : "fail");
   } catch (e: any) {
     console.error("[payment/success]", e?.message, e?.stack);

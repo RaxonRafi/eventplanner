@@ -102,7 +102,8 @@ export const SSLService = {
       where: { tranId },
       select: { status: true },
     });
-    if (existing?.status === "PAID") return { ok: true as const, vData: null };
+    if (existing?.status === "PAID")
+      return { ok: true as const, newlyPaid: false, vData: null };
 
     const validateURL = `${SSL_BASE}/validator/api/validationserverAPI.php`;
     const url = `${validateURL}?val_id=${encodeURIComponent(
@@ -137,26 +138,32 @@ export const SSLService = {
           },
         })
         .catch(() => {});
-      return { ok: false as const, vData };
+      return { ok: false as const, newlyPaid: false, vData };
     }
 
-    // Mark PAID and confirm RSVP in one transaction
-    await prisma.$transaction(async (tx) => {
-      const payment = await tx.payment.update({
-        where: { tranId },
+    // Mark PAID and confirm RSVP in one transaction. The conditional update makes the
+    // transition atomic: if the browser callback and the IPN race, only one sees newlyPaid.
+    const newlyPaid = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.payment.updateMany({
+        where: { tranId, status: { not: "PAID" } },
         data: {
           status: "PAID",
           paymentGatewayData: JSON.stringify(vData),
         },
+      });
+      if (count === 0) return false;
+
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { tranId },
         select: { rsvpId: true },
       });
-
       await tx.rSVP.update({
         where: { id: payment.rsvpId },
         data: { status: "CONFIRMED", paid: true },
       });
+      return true;
     });
 
-    return { ok: true as const, vData };
+    return { ok: true as const, newlyPaid, vData };
   },
 };

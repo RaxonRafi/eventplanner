@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import Logo from "../../public/svg/Logo";
 import { HoverBorderGradient } from "./ui/hover-border-gradient";
 import { ModeToggle } from "./ui/modeToggle";
+import { NotificationBell } from "./NotificationBell";
 
 export function NavbarComponent() {
   const { data } = useUserInfoQuery(undefined);
@@ -63,6 +64,7 @@ export function NavbarComponent() {
           <CustomNavbarLogo />
           <NavItems items={navItems} />
           <div className="relative z-20 flex items-center gap-4">
+            {mounted && isLoggedIn && <NotificationBell />}
             <ModeToggle />
             {mounted &&
               (isLoggedIn ? (
@@ -90,6 +92,7 @@ export function NavbarComponent() {
           <MobileNavHeader>
             <CustomNavbarLogo />
             <div className="flex items-center gap-3">
+              {mounted && isLoggedIn && <NotificationBell />}
               <ModeToggle />
               <MobileNavToggle
               isOpen={isMobileMenuOpen}

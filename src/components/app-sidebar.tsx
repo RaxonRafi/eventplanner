@@ -30,6 +30,7 @@ function getNavForRole(role: "ADMIN" | "ORGANIZER" | "USER" | null): {
     return {
       navMain: [
         { title: "Admin Dashboard", url: "/dashboard/admin" },
+        { title: "Notifications", url: "/dashboard/notifications" },
         {
           title: "Management",
           url: "#",
@@ -48,6 +49,7 @@ function getNavForRole(role: "ADMIN" | "ORGANIZER" | "USER" | null): {
     return {
       navMain: [
         { title: "Dashboard", url: "/dashboard" },
+        { title: "Notifications", url: "/dashboard/notifications" },
         {
           title: "Events",
           url: "#",
@@ -65,6 +67,7 @@ function getNavForRole(role: "ADMIN" | "ORGANIZER" | "USER" | null): {
   return {
     navMain: [
       { title: "Dashboard", url: "/dashboard" },
+        { title: "Notifications", url: "/dashboard/notifications" },
       {
         title: "My Activity",
         url: "#",
