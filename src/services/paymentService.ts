@@ -97,6 +97,13 @@ export const SSLService = {
       throw new Error("Missing SSLCOMMERZ credentials");
     }
 
+    // The browser callback and the IPN both land here — the second one is a no-op
+    const existing = await prisma.payment.findUnique({
+      where: { tranId },
+      select: { status: true },
+    });
+    if (existing?.status === "PAID") return { ok: true as const, vData: null };
+
     const validateURL = `${SSL_BASE}/validator/api/validationserverAPI.php`;
     const url = `${validateURL}?val_id=${encodeURIComponent(
       valId

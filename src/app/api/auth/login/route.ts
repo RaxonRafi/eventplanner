@@ -44,9 +44,8 @@ export async function POST(req: Request) {
       { expiresIn: "7d" }
     );
 
-    // Set token in HTTP-only cookie
+    // Set token in HTTP-only cookie (not in the body, so page scripts can't read it)
     const response = NextResponse.json({
-      token,
       user: {
         id: user.id,
         name: user.name,
@@ -59,13 +58,15 @@ export async function POST(req: Request) {
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      // "lax" so the cookie survives the redirect back from the payment gateway
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
 
     return response;
   } catch (err: any) {
-    return NextResponse.json({ error: err }, { status: 500 });
+    console.error("[auth/login]", err?.message);
+    return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }

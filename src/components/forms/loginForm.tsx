@@ -40,7 +40,7 @@ export function LoginForm({
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     try {
       const res = await login(data).unwrap();
-      if (res?.user && res?.token) {
+      if (res?.user) {
         toast.success("Welcome back!");
         router.push(redirectTo);
       } else {
