@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 
 export interface FaqItem {
   question: string;
@@ -61,13 +60,9 @@ const Faq = ({
   faqs = defaultFaqs,
 }: Faq5Props) => {
   return (
-    <section className="relative min-h-screen bg-black py-32">
+    <section className="relative min-h-screen bg-background py-32">
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 select-none",
-          "[background-size:40px_40px]",
-          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
-        )}
+        className="pointer-events-none absolute inset-0 select-none bg-grid"
       />
       <div className="container mx-auto px-10 lg:px-16 relative z-10">
         <div className="text-center">

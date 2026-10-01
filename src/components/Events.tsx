@@ -16,7 +16,6 @@ interface FeaturedEventsProps {
   events?: EventCard[];
 }
 
-import { cn } from "@/lib/utils";
 import { usePublicEventsQuery } from "@/redux/features/Event/event.api";
 import { HoverBorderGradient } from "./ui/hover-border-gradient";
 
@@ -49,14 +48,10 @@ export function FeaturedEvents({
   const items = events ?? apiItems;
 
   return (
-    <section className="relative min-h-screen bg-black py-32">
+    <section className="relative min-h-screen bg-background py-32">
       {/* background grid */}
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 select-none",
-          "[background-size:40px_40px]",
-          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
-        )}
+        className="pointer-events-none absolute inset-0 select-none bg-grid"
       />
       <div className="container mx-auto z-10 relative flex flex-col items-center gap-16 lg:px-16">
         <div className="text-center">

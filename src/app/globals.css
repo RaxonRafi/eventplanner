@@ -44,6 +44,7 @@
 }
 
 :root {
+  --grid-line: oklch(0.92 0 0);
   --radius: 0.65rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
@@ -79,6 +80,7 @@
 }
 
 .dark {
+  --grid-line: oklch(0.22 0 0);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -134,4 +136,11 @@
 
 .animate-spotlight {
   animation: spotlight 2s ease-out 0.75s 1 forwards;
+}
+
+/* Theme-aware 40px grid used behind the marketing sections */
+@utility bg-grid {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
 }

@@ -30,8 +30,8 @@ export default function EventsPage() {
   const totalPages: number = data?.meta?.totalPages ?? 1;
 
   return (
-    <section className="relative min-h-screen bg-black py-24">
-      <div className="pointer-events-none absolute inset-0 select-none [background-size:40px_40px] [background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]" />
+    <section className="relative min-h-screen bg-background py-24">
+      <div className="pointer-events-none absolute inset-0 select-none bg-grid" />
       <div className="container relative z-10 mx-auto px-4 lg:px-16">
         <div className="mb-10 text-center flex flex-col items-center">
           <div className="mb-4 flex justify-center">
@@ -42,7 +42,7 @@ export default function EventsPage() {
               <span> All events</span>
             </HoverBorderGradient>
           </div>
-          <h1 className="text-3xl font-semibold text-white md:text-4xl">Browse events</h1>
+          <h1 className="text-3xl font-semibold md:text-4xl">Browse events</h1>
           <p className="text-muted-foreground mt-2">
             Discover and RSVP to upcoming events.
           </p>

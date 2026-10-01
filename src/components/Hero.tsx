@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { AnimatedTooltip } from "./ui/animated-tooltip";
@@ -63,12 +62,9 @@ export function Hero({
   },
 }: HeroProps) {
   return (
-    <div className="relative flex h-[40rem] w-full overflow-hidden rounded-md bg-black/[0.96] antialiased md:items-center md:justify-center">
+    <div className="relative flex h-[40rem] w-full overflow-hidden rounded-md bg-background antialiased md:items-center md:justify-center">
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 [background-size:40px_40px] select-none",
-          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
-        )}
+        className="pointer-events-none absolute inset-0 select-none bg-grid"
       />
 
       <Spotlight
@@ -77,10 +73,10 @@ export function Hero({
       />
       <div className="relative z-10 mx-auto w-full max-w-7xl p-4 pt-20 md:pt-0">
         <div className="mx-auto flex max-w-5xl flex-col gap-6 text-center">
-          <h1 className="bg-opacity-50 bg-gradient-to-b from-neutral-50 to-neutral-400 bg-clip-text text-4xl font-bold text-transparent md:text-7xl">
+          <h1 className="bg-opacity-50 bg-gradient-to-b from-neutral-900 to-neutral-500 dark:from-neutral-50 dark:to-neutral-400 bg-clip-text text-4xl font-bold text-transparent md:text-7xl">
             {heading}
           </h1>
-          <p className="mx-auto max-w-lg text-base font-normal text-neutral-300">
+          <p className="mx-auto max-w-lg text-base font-normal text-muted-foreground">
             {description}
           </p>
         </div>
@@ -129,11 +125,11 @@ export function Hero({
                   className="size-5 fill-yellow-400 text-yellow-400"
                 />
               ))}
-              <span className="mr-1 font-semibold text-white">
+              <span className="mr-1 font-semibold text-foreground">
                 {reviews.rating?.toFixed(1)}
               </span>
             </div>
-            <p className="text-left font-medium text-neutral-300">
+            <p className="text-left font-medium text-muted-foreground">
               trusted by {reviews.count}+ event organizers
             </p>
           </div>

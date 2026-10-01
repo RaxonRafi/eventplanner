@@ -20,14 +20,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarDays,
   CheckCircle2,
+  CircleCheck,
   Clock,
+  Landmark,
   MapPin,
   Users,
+  Wallet,
   XCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { StatCard } from "@/components/StatCard";
+import { formatBDT, PLATFORM_FEE_RATE } from "@/lib/fees";
+import { usePaymentsQuery } from "@/redux/features/Payment/payment.api";
 
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -157,6 +163,66 @@ function PendingEventReview() {
   );
 }
 
+type RecentPayment = {
+  id: string;
+  amount: number;
+  platformFee: number;
+  status: string;
+  createdAt: string;
+  rsvp: { user: { name: string | null; email: string }; event: { title: string } };
+};
+
+function RecentPayments() {
+  const { data, isLoading } = usePaymentsQuery({ limit: 6 });
+  const rows: RecentPayment[] = (data?.data ?? []).filter(
+    (p: RecentPayment) => p.status === "PAID" || p.status === "FAILED"
+  );
+
+  if (isLoading) return <Skeleton className="h-48 w-full rounded-xl" />;
+
+  return (
+    <Card className="py-2">
+      <CardContent className="divide-y px-4">
+        {rows.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">No payments yet.</p>
+        ) : (
+          rows.map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {p.status === "PAID" ? (
+                  <CircleCheck className="size-5 shrink-0 text-green-600 dark:text-green-400" />
+                ) : (
+                  <XCircle className="size-5 shrink-0 text-red-600 dark:text-red-400" />
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{p.rsvp.event.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {p.rsvp.user.name ?? p.rsvp.user.email} ·{" "}
+                    {new Date(p.createdAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="font-medium tabular-nums">{formatBDT(p.amount)}</p>
+                {p.status === "PAID" ? (
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    Fee {formatBDT(p.platformFee)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-red-600 dark:text-red-400">Failed</p>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminDashboardPage() {
   const { data: stats, isLoading } = useAdminStatsQuery(undefined);
 
@@ -169,52 +235,60 @@ export default function AdminDashboardPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))
-          ) : (
-            <>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Total Users</CardDescription>
-                  <CardTitle className="text-3xl flex items-center gap-2">
-                    <Users className="size-5 text-muted-foreground" />
-                    {stats?.totalUsers ?? 0}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Total Events</CardDescription>
-                  <CardTitle className="text-3xl flex items-center gap-2">
-                    <CalendarDays className="size-5 text-muted-foreground" />
-                    {stats?.totalEvents ?? 0}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Pending Review</CardDescription>
-                  <CardTitle className="text-3xl flex items-center gap-2 text-amber-600">
-                    <Clock className="size-5" />
-                    {stats?.pendingEvents ?? 0}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Approved Events</CardDescription>
-                  <CardTitle className="text-3xl flex items-center gap-2 text-green-600">
-                    <CheckCircle2 className="size-5" />
-                    {stats?.approvedEvents ?? 0}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </>
-          )}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard label="Total users" value={stats?.totalUsers ?? 0} icon={Users} loading={isLoading} />
+          <StatCard
+            label="Total events"
+            value={stats?.totalEvents ?? 0}
+            hint={`${stats?.approvedEvents ?? 0} approved`}
+            icon={CalendarDays}
+            loading={isLoading}
+          />
+          <StatCard
+            label="Pending review"
+            value={stats?.pendingEvents ?? 0}
+            icon={Clock}
+            className="text-amber-600 dark:text-amber-400"
+            loading={isLoading}
+          />
+          <StatCard
+            label="Gross sales"
+            value={formatBDT(stats?.grossSales ?? 0)}
+            hint={`${stats?.paidPayments ?? 0} successful payments`}
+            icon={Wallet}
+            loading={isLoading}
+          />
+          <StatCard
+            label="Platform earnings"
+            value={formatBDT(stats?.platformFee ?? 0)}
+            hint={`${PLATFORM_FEE_RATE * 100}% of every booking`}
+            icon={Landmark}
+            className="text-green-600 dark:text-green-400"
+            loading={isLoading}
+          />
+          <StatCard
+            label="Failed payments"
+            value={stats?.failedPayments ?? 0}
+            icon={XCircle}
+            className="text-red-600 dark:text-red-400"
+            loading={isLoading}
+          />
         </div>
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Recent Payments</h2>
+              <p className="text-sm text-muted-foreground">
+                Latest successful and failed transactions
+              </p>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/payments">View All Payments</Link>
+            </Button>
+          </div>
+          <RecentPayments />
+        </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">

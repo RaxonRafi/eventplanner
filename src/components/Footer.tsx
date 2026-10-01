@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import React from "react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
 import Logo from "../../public/svg/Logo";
@@ -77,13 +76,9 @@ const Footer = ({
   legalLinks = defaultLegalLinks,
 }: Footer7Props) => {
   return (
-    <section className="relative bg-black">
+    <section className="relative bg-background">
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 select-none",
-          "[background-size:40px_40px]",
-          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
-        )}
+        className="pointer-events-none absolute inset-0 select-none bg-grid"
       />
       <div className="container mx-auto px-10 lg:px-16 relative z-10">
         <div className="flex w-full flex-col justify-between gap-10 lg:flex-row lg:items-start lg:text-left">

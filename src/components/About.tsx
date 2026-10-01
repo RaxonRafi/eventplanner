@@ -2,7 +2,6 @@
 import React, { useEffect } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { WobbleCard } from "@/components/ui/wobble-card";
-import { cn } from "@/lib/utils";
 
 
 
@@ -71,14 +70,10 @@ const About = ({
   achievements = defaultAchievements,
 }: AboutProps = {}) => {
   return (
-    <section className="relative min-h-screen bg-black py-32">
+    <section className="relative min-h-screen bg-background py-32">
       {/* background grid */}
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 select-none",
-          "[background-size:40px_40px]",
-          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
-        )}
+        className="pointer-events-none absolute inset-0 select-none bg-grid"
       />
 
       <div className="relative z-10 container mx-auto px-6">
@@ -147,15 +142,15 @@ const About = ({
         {/* achievements (Cleaned up, no EvervaultCard) */}
         <div className="mt-32 w-full">
             {/* Original achievements div restored */}
-            <div className="relative overflow-hidden rounded-xl bg-black/50 p-10 md:p-16 shadow-xl border border-neutral-800">
+            <div className="relative overflow-hidden rounded-xl bg-card/80 p-10 md:p-16 shadow-xl border">
                 
                 {/* Content */}
                 <div className="relative z-10">
                     <div className="text-center md:text-left">
-                        <h3 className="text-3xl md:text-5xl font-bold text-white">
+                        <h3 className="text-3xl md:text-5xl font-bold text-foreground">
                             {achievementsTitle}
                         </h3>
-                        <p className="mt-4 max-w-xl text-neutral-400">
+                        <p className="mt-4 max-w-xl text-muted-foreground">
                             {achievementsDescription}
                         </p>
                     </div>
@@ -166,11 +161,11 @@ const About = ({
                                 key={item.label + idx}
                                 className="flex flex-col gap-2 text-center"
                             >
-                                <span className="text-4xl md:text-5xl font-bold text-white">
+                                <span className="text-4xl md:text-5xl font-bold text-foreground">
                                     {/* Using Framer Motion CountUp component */}
                                     <CountUp endValue={item.value} />
                                 </span>
-                                <p className="text-neutral-400">{item.label}</p>
+                                <p className="text-muted-foreground">{item.label}</p>
                             </div>
                         ))}
                     </div>
