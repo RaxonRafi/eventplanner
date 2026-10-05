@@ -7,13 +7,13 @@ import { notFound } from "next/navigation";
 const STATES = {
   success: {
     icon: CircleCheck,
-    color: "text-green-600",
+    color: "text-success",
     title: "Payment successful",
     message: "Your RSVP is confirmed. See you at the event!",
   },
   fail: {
     icon: CircleX,
-    color: "text-red-600",
+    color: "text-destructive",
     title: "Payment failed",
     message:
       "We couldn't complete your payment. You have not been charged — you can try again from the event page.",

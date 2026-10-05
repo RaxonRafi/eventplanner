@@ -4,7 +4,7 @@ import {
   FilterPill,
   TableCard,
   TableMessage,
-  TablePagination,
+  TableSearch,
   TableSkeletonRows,
   TableToolbar,
 } from "@/components/dashboard/DataTable";
@@ -12,13 +12,14 @@ import { PageIntro } from "@/components/dashboard/PageHeader";
 import { StatusPill, type StatusTone } from "@/components/dashboard/StatusPill";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { oneOf, usePageParams, useQueryParams, useSearchParam } from "@/hooks/use-query-params";
 import { useAllRsvpQuery, useMyRsvpsQuery } from "@/redux/features/Reservation/rsvp.api";
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
 import { CalendarDays, CircleCheck, CircleX, Clock, ListFilter, type LucideIcon, MapPin, Ticket } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 type Rsvp = {
   id: string;
@@ -54,27 +55,10 @@ function StatusBadge({ status }: { status: Rsvp["status"] }) {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-function Pager({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (p: number) => void }) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="flex items-center justify-end gap-2">
-      <span className="mr-2 text-sm text-muted-foreground">
-        Page {page} of {totalPages}
-      </span>
-      <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-        Previous
-      </Button>
-      <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-        Next
-      </Button>
-    </div>
-  );
-}
-
 /** A member's own bookings. */
 function MyBookings() {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useMyRsvpsQuery({ page, limit: 10 });
+  const { page, pageSize } = usePageParams();
+  const { data, isLoading, isError } = useMyRsvpsQuery({ page, limit: pageSize });
   const rsvps: Rsvp[] = data?.data ?? [];
 
   return (
@@ -136,7 +120,13 @@ function MyBookings() {
               </Card>
             );
           })}
-          <Pager page={page} totalPages={data?.meta?.totalPages ?? 1} setPage={setPage} />
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={data?.meta?.total ?? 0}
+            pageSizes={[]}
+            className="sm:justify-end"
+          />
         </div>
       )}
     </div>
@@ -145,10 +135,16 @@ function MyBookings() {
 
 /** Attendee list for admins (all events) and organizers (their own events). */
 function AttendeeTable({ isAdmin }: { isAdmin: boolean }) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [status, setStatus] = useState<Rsvp["status"] | undefined>(undefined);
-  const { data, isLoading, isFetching, isError } = useAllRsvpQuery({ page, limit: pageSize, status });
+  const { searchParams, setParams } = useQueryParams();
+  const { page, pageSize } = usePageParams();
+  const { q, input, setInput } = useSearchParam();
+  const status = oneOf(searchParams.get("status"), STATUSES.map((s) => s.value));
+  const { data, isLoading, isFetching, isError } = useAllRsvpQuery({
+    page,
+    limit: pageSize,
+    status,
+    q: q || undefined,
+  });
   const rsvps: Rsvp[] = data?.data ?? [];
 
   return (
@@ -160,33 +156,29 @@ function AttendeeTable({ isAdmin }: { isAdmin: boolean }) {
       <TableCard
         fetching={isFetching}
         toolbar={
-          <TableToolbar>
+          <TableToolbar
+            search={
+              <TableSearch
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Search attendee or event…"
+                aria-label="Search RSVPs"
+              />
+            }
+          >
             <FilterPill
               label="Filter by status"
               icon={ListFilter}
               options={STATUSES}
               value={status}
-              onChange={(v) => {
-                setStatus(v);
-                setPage(1);
-              }}
+              onChange={(v) => setParams({ status: v })}
             />
           </TableToolbar>
         }
         footer={
           !isLoading &&
           !isError && (
-            <TablePagination
-              page={page}
-              pageSize={pageSize}
-              total={data?.meta?.total ?? 0}
-              noun="RSVPs"
-              onPageChange={setPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
-            />
+            <Pagination page={page} pageSize={pageSize} total={data?.meta?.total ?? 0} noun="RSVPs" />
           )
         }
       >

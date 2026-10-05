@@ -5,14 +5,16 @@ import {
   FilterPill,
   TableCard,
   TableMessage,
-  TablePagination,
+  TableSearch,
   TableSkeletonRows,
   TableToolbar,
 } from "@/components/dashboard/DataTable";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { StatusPill, type StatusTone } from "@/components/dashboard/StatusPill";
+import { Pagination } from "@/components/ui/pagination";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { oneOf, usePageParams, useQueryParams, useSearchParam } from "@/hooks/use-query-params";
 import { formatBDT, PLATFORM_FEE_RATE } from "@/lib/fees";
 import {
   type PaymentStatus,
@@ -20,7 +22,6 @@ import {
 } from "@/redux/features/Payment/payment.api";
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
 import { Ban, CircleCheck, CircleX, Clock, Landmark, ListFilter, type LucideIcon, Undo2, Wallet } from "lucide-react";
-import { useState } from "react";
 
 type PaymentRow = {
   id: string;
@@ -45,6 +46,8 @@ const STATUSES: { label: string; value?: PaymentStatus }[] = [
   { label: "Pending", value: "UNPAID" },
 ];
 
+const ALL_STATUSES = "ALL";
+
 const STATUS_STYLE: Record<PaymentStatus, { tone: StatusTone; icon: LucideIcon }> = {
   PAID: { tone: "green", icon: CircleCheck },
   FAILED: { tone: "red", icon: CircleX },
@@ -54,15 +57,20 @@ const STATUS_STYLE: Record<PaymentStatus, { tone: StatusTone; icon: LucideIcon }
 };
 
 export default function PaymentsPage() {
-  const [status, setStatus] = useState<PaymentStatus | undefined>("PAID");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const { searchParams, setParams } = useQueryParams();
+  // Successful payments by default; ?status=ALL shows every status
+  const statusParam = searchParams.get("status");
+  const status: PaymentStatus | undefined =
+    statusParam === ALL_STATUSES ? undefined : oneOf(statusParam, STATUSES.map((s) => s.value)) ?? "PAID";
+  const { page, pageSize } = usePageParams();
+  const { q, input, setInput } = useSearchParam();
   const { data: me } = useUserInfoQuery(undefined);
   const isAdmin = me?.data?.role === "ADMIN";
   const { data, isLoading, isFetching, isError } = usePaymentsQuery({
     status,
     page,
     limit: pageSize,
+    q: q || undefined,
   });
 
   const rows: PaymentRow[] = data?.data ?? [];
@@ -95,7 +103,7 @@ export default function PaymentsPage() {
             value={formatBDT(summary?.organizerAmount ?? 0)}
             hint="After platform fee"
             icon={CircleCheck}
-            className="text-green-600 dark:text-green-400"
+            className="text-success"
             loading={isLoading}
           />
           <StatCard
@@ -103,7 +111,7 @@ export default function PaymentsPage() {
             value={counts.FAILED ?? 0}
             hint={`${counts.CANCELLED ?? 0} cancelled`}
             icon={CircleX}
-            className="text-red-600 dark:text-red-400"
+            className="text-destructive"
             loading={isLoading}
           />
         </div>
@@ -111,34 +119,30 @@ export default function PaymentsPage() {
         <TableCard
           fetching={isFetching}
           toolbar={
-            <TableToolbar>
+            <TableToolbar
+              search={
+                <TableSearch
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Search customer, event or transaction ID…"
+                  aria-label="Search payments"
+                />
+              }
+            >
               <h2 className="mr-auto text-base font-semibold">Transactions</h2>
               <FilterPill
                 label="Filter by status"
                 icon={ListFilter}
                 options={STATUSES.map((s) => ({ ...s, count: s.value ? counts[s.value] : undefined }))}
                 value={status}
-                onChange={(v) => {
-                  setStatus(v);
-                  setPage(1);
-                }}
+                onChange={(v) => setParams({ status: v === "PAID" ? undefined : v ?? ALL_STATUSES })}
               />
             </TableToolbar>
           }
           footer={
             !isLoading &&
             !isError && (
-              <TablePagination
-                page={page}
-                pageSize={pageSize}
-                total={data?.meta?.total ?? 0}
-                noun="payments"
-                onPageChange={setPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPage(1);
-                }}
-              />
+              <Pagination page={page} pageSize={pageSize} total={data?.meta?.total ?? 0} noun="payments" />
             )
           }
         >

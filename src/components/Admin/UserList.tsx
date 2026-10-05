@@ -4,7 +4,6 @@ import { DeleteConfirmation } from "@/components/DeleteConfirmation";
 import {
   TableCard,
   TableMessage,
-  TablePagination,
   TableSearch,
   TableSkeletonRows,
   TableToolbar,
@@ -12,11 +11,11 @@ import {
 import { PageIntro } from "@/components/dashboard/PageHeader";
 import { StatusPill, type StatusTone } from "@/components/dashboard/StatusPill";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useDebounce } from "@/hooks/use-debounce";
+import { usePageParams, useSearchParam } from "@/hooks/use-query-params";
 import { useAllUsersQuery, useDeleteUserMutation, useUserInfoQuery } from "@/redux/features/User/user.api";
 import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type User = {
@@ -42,11 +41,8 @@ const initials = (u: User) =>
     .toUpperCase();
 
 export function UserList() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState("");
-  const q = useDebounce(search.trim(), 400);
-  useEffect(() => setPage(1), [q]);
+  const { page, pageSize } = usePageParams();
+  const { q, input, setInput } = useSearchParam();
 
   const { data, isLoading, isFetching, isError } = useAllUsersQuery({ page, take: pageSize, q: q || undefined });
   const { data: me } = useUserInfoQuery(undefined);
@@ -74,8 +70,8 @@ export function UserList() {
           <TableToolbar
             search={
               <TableSearch
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Search name or email…"
                 aria-label="Search users"
               />
@@ -85,17 +81,7 @@ export function UserList() {
         footer={
           !isLoading &&
           !isError && (
-            <TablePagination
-              page={page}
-              pageSize={pageSize}
-              total={data?.total ?? 0}
-              noun="users"
-              onPageChange={setPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
-            />
+            <Pagination page={page} pageSize={pageSize} total={data?.total ?? 0} noun="users" />
           )
         }
       >

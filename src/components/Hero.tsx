@@ -66,11 +66,11 @@ export function Hero({
 
       <Spotlight
         className="-top-40 left-0 md:-top-20 md:left-60"
-        fill="white"
+        fill="var(--spotlight)"
       />
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-20">
         <div className="mx-auto flex max-w-5xl flex-col gap-6 text-center">
-          <h1 className="bg-opacity-50 bg-gradient-to-b from-neutral-900 to-neutral-500 dark:from-neutral-50 dark:to-neutral-400 bg-clip-text text-4xl font-bold text-transparent md:text-7xl">
+          <h1 className="bg-opacity-50 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-4xl font-bold text-transparent md:text-7xl">
             {heading}
           </h1>
           <p className="mx-auto max-w-lg text-base font-normal text-muted-foreground">
@@ -79,11 +79,11 @@ export function Hero({
         </div>
 
         <div className="mt-10 flex justify-center">
-          <Link href={button.url} className="bg-slate-800 no-underline group cursor-pointer relative shadow-2xl shadow-zinc-900 rounded-full p-px text-xs font-semibold leading-6  text-white inline-block">
+          <Link href={button.url} className="bg-inverse-border no-underline group cursor-pointer relative shadow-2xl shadow-inverse rounded-full p-px text-xs font-semibold leading-6 text-inverse-foreground inline-block">
             <span className="absolute inset-0 overflow-hidden rounded-full">
-              <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(56,189,248,0.6)_0%,rgba(56,189,248,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
+              <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,color-mix(in_oklab,var(--glow)_60%,transparent)_0%,transparent_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
             </span>
-            <div className="relative flex space-x-2 items-center z-10 rounded-full bg-zinc-950 py-0.5 px-4 ring-1 ring-white/10 ">
+            <div className="relative flex space-x-2 items-center z-10 rounded-full bg-inverse py-0.5 px-4 ring-1 ring-inverse-foreground/10">
               <span>{button.text}</span>
               <svg
                 width="16"
@@ -101,7 +101,7 @@ export function Hero({
                 ></path>
               </svg>
             </div>
-            <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-emerald-400/0 via-emerald-400/90 to-emerald-400/0 transition-opacity duration-500 group-hover:opacity-40"></span>
+            <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-glow-accent/0 via-glow-accent/90 to-glow-accent/0 transition-opacity duration-500 group-hover:opacity-40"></span>
           </Link>
         </div>
 
@@ -119,7 +119,7 @@ export function Hero({
               {[...Array(5)].map((_, index) => (
                 <Star
                   key={index}
-                  className="size-5 fill-yellow-400 text-yellow-400"
+                  className="size-5 fill-rating text-rating"
                 />
               ))}
               <span className="mr-1 font-semibold text-foreground">

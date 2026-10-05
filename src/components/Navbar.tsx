@@ -48,10 +48,10 @@ export function NavbarComponent() {
     return (
       <Link
         href="/"
-        className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
+        className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-foreground"
       >
         <Logo />
-        <span className="font-medium text-black dark:text-white">Eventers</span>
+        <span className="font-medium text-foreground">Eventers</span>
       </Link>
     );
   };
@@ -77,7 +77,7 @@ export function NavbarComponent() {
                         <HoverBorderGradient
                           containerClassName="rounded-full"
                           as="button"
-                          className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2"
+                          className="bg-background text-foreground flex items-center space-x-2"
                         >
                           <span>Sign In</span>
                         </HoverBorderGradient>
@@ -110,7 +110,7 @@ export function NavbarComponent() {
                 key={`mobile-link-${idx}`}
                 href={item.link}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="relative text-neutral-600 dark:text-neutral-300"
+                className="relative text-muted-foreground"
               >
                 <span className="block">{item.name}</span>
               </Link>

@@ -11,8 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDebounce } from "@/hooks/use-debounce";
+import { oneOf, usePageParams, useQueryParams, useSearchParam } from "@/hooks/use-query-params";
 import { cn, eventImage } from "@/lib/utils";
 import { useDeleteEventMutation, useOrgEventsQuery } from "@/redux/features/Event/event.api";
 import {
@@ -27,7 +28,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 type OrgEvent = {
@@ -57,18 +58,15 @@ const SORTS = [
 ];
 
 export function OrgEventList() {
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<string | undefined>(undefined);
-  const [sort, setSort] = useState("date:desc");
-  const [search, setSearch] = useState("");
-  const q = useDebounce(search.trim(), 400);
-
-  // Any filter change goes back to the first page
-  useEffect(() => setPage(1), [q, status, sort]);
+  const { searchParams, setParams } = useQueryParams();
+  const { page, pageSize } = usePageParams(9);
+  const { q, input, setInput } = useSearchParam();
+  const status = oneOf(searchParams.get("status"), TABS.map((t) => t.value));
+  const sort = oneOf(searchParams.get("sort"), SORTS.map((s) => s.value)) ?? SORTS[0].value;
 
   const { data, isLoading, isFetching, isError } = useOrgEventsQuery({
     page,
-    take: 9,
+    take: pageSize,
     q: q || undefined,
     sort,
     status,
@@ -77,7 +75,6 @@ export function OrgEventList() {
   const [toDelete, setToDelete] = useState<OrgEvent | null>(null);
 
   const events: OrgEvent[] = data?.data ?? [];
-  const totalPages: number = data?.meta?.totalPages ?? 1;
 
   const handleDelete = async (evt: OrgEvent) => {
     const id = toast.loading("Deleting event…");
@@ -108,8 +105,8 @@ export function OrgEventList() {
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Search your events…"
             className="pl-9"
             aria-label="Search events"
@@ -120,7 +117,7 @@ export function OrgEventList() {
             {TABS.map((t) => (
               <button
                 key={t.label}
-                onClick={() => setStatus(t.value)}
+                onClick={() => setParams({ status: t.value })}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   status === t.value
@@ -134,7 +131,7 @@ export function OrgEventList() {
           </div>
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(e) => setParams({ sort: e.target.value === SORTS[0].value ? undefined : e.target.value })}
             className="h-9 rounded-md border bg-background px-3 text-sm"
             aria-label="Sort events"
           >
@@ -284,24 +281,13 @@ export function OrgEventList() {
         onConfirm={() => toDelete && handleDelete(toDelete)}
       />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <span className="mr-2 text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <Button size="sm" variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={page >= totalPages || isFetching}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={data?.meta?.total ?? 0}
+        pageSizes={[]}
+        className="sm:justify-end"
+      />
     </div>
   );
 }

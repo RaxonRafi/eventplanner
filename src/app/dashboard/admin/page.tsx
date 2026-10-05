@@ -187,9 +187,9 @@ function RecentPayments() {
             <div key={p.id} className="flex items-center justify-between gap-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
                 {p.status === "PAID" ? (
-                  <CircleCheck className="size-5 shrink-0 text-green-600 dark:text-green-400" />
+                  <CircleCheck className="size-5 shrink-0 text-success" />
                 ) : (
-                  <XCircle className="size-5 shrink-0 text-red-600 dark:text-red-400" />
+                  <XCircle className="size-5 shrink-0 text-destructive" />
                 )}
                 <div className="min-w-0">
                   <p className="truncate font-medium">{p.rsvp.event.title}</p>
@@ -209,7 +209,7 @@ function RecentPayments() {
                     Fee {formatBDT(p.platformFee)}
                   </p>
                 ) : (
-                  <p className="text-xs text-red-600 dark:text-red-400">Failed</p>
+                  <p className="text-xs text-destructive">Failed</p>
                 )}
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function AdminDashboardPage() {
             label="Pending review"
             value={stats?.pendingEvents ?? 0}
             icon={Clock}
-            className="text-amber-600 dark:text-amber-400"
+            className="text-warning"
             loading={isLoading}
           />
           <StatCard
@@ -256,14 +256,14 @@ export default function AdminDashboardPage() {
             value={formatBDT(stats?.platformFee ?? 0)}
             hint={`${PLATFORM_FEE_RATE * 100}% of every booking`}
             icon={Landmark}
-            className="text-green-600 dark:text-green-400"
+            className="text-success"
             loading={isLoading}
           />
           <StatCard
             label="Failed payments"
             value={stats?.failedPayments ?? 0}
             icon={XCircle}
-            className="text-red-600 dark:text-red-400"
+            className="text-destructive"
             loading={isLoading}
           />
         </div>

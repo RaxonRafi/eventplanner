@@ -6,7 +6,6 @@ import {
   FilterPill,
   TableCard,
   TableMessage,
-  TablePagination,
   TableSearch,
   TableSkeletonRows,
   TableToolbar,
@@ -20,7 +19,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { oneOf, usePageParams, useQueryParams, useSearchParam } from "@/hooks/use-query-params";
 import { eventImage } from "@/lib/utils";
 import {
   type EventStatus,
@@ -54,10 +55,10 @@ const STATUSES: { label: string; value?: EventStatus }[] = [
 ];
 
 export function EventList() {
-  const [status, setStatus] = useState<EventStatus | undefined>(undefined);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const { searchParams, setParams } = useQueryParams();
+  const status = oneOf(searchParams.get("status"), STATUSES.map((s) => s.value));
+  const { q: search, input, setInput } = useSearchParam();
+  const { page, pageSize } = usePageParams();
   const { data, isLoading, isFetching, isError } = useAllEventsQuery({ status });
   const [updateStatus, { isLoading: isUpdating }] = useUpdateEventStatusMutation();
   const [deleteEvent] = useDeleteEventMutation();
@@ -106,11 +107,8 @@ export function EventList() {
           <TableToolbar
             search={
               <TableSearch
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Search by title, location or organizer…"
                 aria-label="Search events"
               />
@@ -121,27 +119,14 @@ export function EventList() {
               icon={ListFilter}
               options={STATUSES}
               value={status}
-              onChange={(v) => {
-                setStatus(v);
-                setPage(1);
-              }}
+              onChange={(v) => setParams({ status: v })}
             />
           </TableToolbar>
         }
         footer={
           !isLoading &&
           !isError && (
-            <TablePagination
-              page={currentPage}
-              pageSize={pageSize}
-              total={events.length}
-              noun="events"
-              onPageChange={setPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
-            />
+            <Pagination page={currentPage} pageSize={pageSize} total={events.length} noun="events" />
           )
         }
       >
@@ -202,7 +187,7 @@ export function EventList() {
                           disabled={isUpdating}
                           onClick={() => handleStatus(evt, "APPROVED")}
                         >
-                          <CheckCircle2 className="size-4 text-green-600" /> Approve
+                          <CheckCircle2 className="size-4 text-success" /> Approve
                         </Button>
                       )}
                       <DropdownMenu>

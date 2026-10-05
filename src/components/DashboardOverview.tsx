@@ -124,7 +124,7 @@ export function DashboardOverview() {
           value={formatBDT(data?.revenue?.organizerAmount ?? 0)}
           hint={`From ${formatBDT(data?.revenue?.gross ?? 0)} in sales`}
           icon={Wallet}
-          className="text-green-600 dark:text-green-400"
+          className="text-success"
           loading={isLoading}
         />
         <StatCard

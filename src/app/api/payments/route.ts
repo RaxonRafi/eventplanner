@@ -2,13 +2,13 @@
 import { getAuth } from "@/lib/auth";
 import { splitAmount } from "@/lib/fees";
 import prisma from "@/lib/prisma";
-import { PaymentStatus, Role } from "@prisma/client";
+import { PaymentStatus, Prisma, Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 /**
  * Payments list for the dashboard.
  * ADMIN sees every payment; ORGANIZER sees payments for their own events.
- * Query: ?status=PAID|FAILED|CANCELLED|UNPAID|REFUNDED&page=&limit=
+ * Query: ?status=PAID|FAILED|CANCELLED|UNPAID|REFUNDED&q=&page=&limit=
  */
 export async function GET(req: Request) {
   const auth = getAuth(req);
@@ -25,8 +25,22 @@ export async function GET(req: Request) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20));
 
-  const scope = auth.role === Role.ORGANIZER ? { rsvp: { event: { organizerId: auth.id } } } : {};
-  const where = { ...scope, ...(status ? { status } : {}) };
+  const q = searchParams.get("q")?.trim() || undefined;
+
+  const scope: Prisma.PaymentWhereInput =
+    auth.role === Role.ORGANIZER ? { rsvp: { event: { organizerId: auth.id } } } : {};
+  const contains = { contains: q, mode: Prisma.QueryMode.insensitive };
+  const search: Prisma.PaymentWhereInput = q
+    ? {
+        OR: [
+          { tranId: contains },
+          { rsvp: { user: { name: contains } } },
+          { rsvp: { user: { email: contains } } },
+          { rsvp: { event: { title: contains } } },
+        ],
+      }
+    : {};
+  const where: Prisma.PaymentWhereInput = { AND: [scope, search, status ? { status } : {}] };
 
   try {
     const [total, rows, byStatus] = await Promise.all([

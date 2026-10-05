@@ -197,6 +197,7 @@ export async function GET(req: Request) {
   const statusParam = searchParams.get("status") ?? undefined
   const pageParam = searchParams.get("page") ?? "1"
   const limitParam = searchParams.get("limit") ?? "20"
+  const q = searchParams.get("q")?.trim() || undefined
 
   // status validation (optional)
   let status: RSVPStatus | undefined
@@ -215,6 +216,15 @@ export async function GET(req: Request) {
   const baseWhere: any = {
     ...(eventId ? { eventId } : {}),
     ...(status ? { status } : {}),
+    ...(q
+      ? {
+          OR: [
+            { user: { name: { contains: q, mode: "insensitive" } } },
+            { user: { email: { contains: q, mode: "insensitive" } } },
+            { event: { title: { contains: q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
   }
 
   // organizer scope: only RSVPs for events they own
@@ -222,7 +232,7 @@ export async function GET(req: Request) {
     ? { event: { organizerId: user.id } } // relation filter
     : {}
 
-  const where = { ...baseWhere, ...organizerScope }
+  const where = { AND: [baseWhere, organizerScope] }
 
   try {
     const [total, data] = await Promise.all([

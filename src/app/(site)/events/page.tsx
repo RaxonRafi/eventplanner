@@ -7,11 +7,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
+import { Pagination } from "@/components/ui/pagination";
+import { oneOf, usePageParams, useQueryParams, useSearchParam } from "@/hooks/use-query-params";
 import { cn, eventImage } from "@/lib/utils";
 import { usePublicEventsQuery } from "@/redux/features/Event/event.api";
-import { CalendarX2, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarX2, Search, X } from "lucide-react";
+import { Suspense } from "react";
 
 type PublicEvent = {
   id: string;
@@ -40,16 +41,20 @@ const SORTS: { label: string; value: Sort }[] = [
 ];
 
 export default function EventsPage() {
-  const [page, setPage] = useState(1);
-  const [when, setWhen] = useState<When>("upcoming");
-  const [sort, setSort] = useState<Sort>("latest");
-  const [search, setSearch] = useState("");
-  // Only query the API once typing has paused
-  const q = useDebounce(search.trim(), 400);
-  const limit = 9;
+  return (
+    <Suspense>
+      <EventsBrowser />
+    </Suspense>
+  );
+}
 
-  // New search term -> back to the first page
-  useEffect(() => setPage(1), [q]);
+function EventsBrowser() {
+  const { searchParams, setParams } = useQueryParams();
+  const { page, pageSize: limit } = usePageParams(9);
+  const when: When = oneOf(searchParams.get("when"), TABS.map((t) => t.value)) ?? "upcoming";
+  const sort: Sort = oneOf(searchParams.get("sort"), SORTS.map((s) => s.value)) ?? "latest";
+  // The API is only queried once typing has paused
+  const { q, input: search, setInput: setSearch } = useSearchParam();
 
   const { data, isLoading, isFetching, isError } = usePublicEventsQuery({
     page,
@@ -61,7 +66,6 @@ export default function EventsPage() {
 
   const events: PublicEvent[] = data?.data ?? [];
   const total: number = data?.meta?.total ?? 0;
-  const totalPages: number = data?.meta?.totalPages ?? 1;
 
   return (
     <section className="relative pb-20 pt-10 md:pt-14">
@@ -110,10 +114,7 @@ export default function EventsPage() {
                   key={t.value}
                   role="tab"
                   aria-selected={when === t.value}
-                  onClick={() => {
-                    setWhen(t.value);
-                    setPage(1);
-                  }}
+                  onClick={() => setParams({ when: t.value === "upcoming" ? undefined : t.value })}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                     when === t.value
@@ -127,10 +128,7 @@ export default function EventsPage() {
             </div>
             <select
               value={sort}
-              onChange={(e) => {
-                setSort(e.target.value as Sort);
-                setPage(1);
-              }}
+              onChange={(e) => setParams({ sort: e.target.value === "latest" ? undefined : e.target.value })}
               className="h-9 rounded-lg border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Sort events"
             >
@@ -171,10 +169,7 @@ export default function EventsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setSearch("");
-                  setWhen("all");
-                }}
+                onClick={() => setParams({ q: undefined, when: "all" })}
               >
                 Show all events
               </Button>
@@ -204,38 +199,13 @@ export default function EventsPage() {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="mt-10 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page === 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              aria-label="Previous page"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <Button
-                key={p}
-                variant={p === page ? "default" : "outline"}
-                size="icon"
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              aria-label="Next page"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          pageSize={limit}
+          total={total}
+          pageSizes={[]}
+          className="mt-10 sm:justify-center"
+        />
       </div>
     </section>
   );

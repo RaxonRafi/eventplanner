@@ -75,7 +75,7 @@ const About = ({
       <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
         {/* heading */}
         <div className="mb-16 text-center max-w-3xl mx-auto">
-          <h2 className="bg-gradient-to-b from-neutral-900 to-neutral-500 bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl dark:from-neutral-50 dark:to-neutral-400">
+          <h2 className="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
             {title}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">{description}</p>
@@ -89,12 +89,12 @@ const About = ({
             className="bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: "url('/images/about-1.jpg')" }}
           >
-            <div className="absolute inset-0 bg-black/50 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-overlay/50 rounded-2xl"></div>
             <div className="max-w-xs z-10 relative p-6">
-              <h2 className="text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
+              <h2 className="text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-inverse-foreground">
                 Eventers powers the entire event universe
               </h2>
-              <p className="mt-4 text-left text-base/6 text-neutral-200">
+              <p className="mt-4 text-left text-base/6 text-inverse-foreground/80">
                 With over 1,200+ events managed and 250k+ RSVPs processed,
                 Eventers is the most popular event management platform for
                 organizers.
@@ -103,12 +103,12 @@ const About = ({
           </WobbleCard>
 
           {/* Card 2: No Image Background */}
-          <WobbleCard containerClassName="col-span-1 min-h-[300px] overflow-hidden relative bg-indigo-700 rounded-2xl">
+          <WobbleCard containerClassName="col-span-1 min-h-[300px] overflow-hidden relative bg-feature rounded-2xl">
             <div className="z-10 relative p-6">
-              <h2 className="max-w-80 text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
+              <h2 className="max-w-80 text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-inverse-foreground">
                 Made for Organizers, Loved by Guests
               </h2>
-              <p className="mt-4 max-w-[26rem] text-left text-base/6 text-neutral-200">
+              <p className="mt-4 max-w-[26rem] text-left text-base/6 text-inverse-foreground/80">
                 Build beautiful event pages, manage capacity, offer tiered
                 packages, and accept secure payments.
               </p>
@@ -121,12 +121,12 @@ const About = ({
             className="bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: "url('/images/about-2.jpg')" }}
           >
-            <div className="absolute inset-0 bg-black/50 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-overlay/50 rounded-2xl"></div>
             <div className="max-w-sm z-10 relative p-6">
-              <h2 className="max-w-sm md:max-w-lg text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-white">
+              <h2 className="max-w-sm md:max-w-lg text-left text-balance text-base md:text-xl lg:text-3xl font-semibold tracking-[-0.015em] text-inverse-foreground">
                 Create your first event today!
               </h2>
-              <p className="mt-4 max-w-[26rem] text-left text-base/6 text-neutral-200">
+              <p className="mt-4 max-w-[26rem] text-left text-base/6 text-inverse-foreground/80">
                 Join thousands of event organizers who trust Eventers to make
                 their events unforgettable.
               </p>

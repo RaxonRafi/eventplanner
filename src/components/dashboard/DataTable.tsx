@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronLeft, ChevronRight, Search, type LucideIcon } from "lucide-react";
+import { ChevronDown, Search, type LucideIcon } from "lucide-react";
 
 /** Card shell shared by every dashboard table: toolbar, bordered table, pagination footer. */
 export function TableCard({
@@ -32,7 +32,7 @@ export function TableCard({
       <div className={cn("overflow-hidden rounded-xl border transition-opacity", fetching && "opacity-60")}>
         {children}
       </div>
-      {footer}
+      {footer && <div className="border-t pt-4">{footer}</div>}
     </Card>
   );
 }
@@ -144,113 +144,5 @@ export function TableMessage({
         {children}
       </TableCell>
     </TableRow>
-  );
-}
-
-function pageItems(page: number, totalPages: number): (number | "gap")[] {
-  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-  const items: (number | "gap")[] = [1];
-  const start = Math.max(2, page - 1);
-  const end = Math.min(totalPages - 1, page + 1);
-  if (start > 2) items.push("gap");
-  for (let p = start; p <= end; p++) items.push(p);
-  if (end < totalPages - 1) items.push("gap");
-  items.push(totalPages);
-  return items;
-}
-
-const pageButton =
-  "inline-flex size-8 items-center justify-center rounded-md border bg-background text-sm font-medium tabular-nums outline-none transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
-
-export function TablePagination({
-  page,
-  pageSize,
-  total,
-  noun,
-  onPageChange,
-  onPageSizeChange,
-  pageSizes = [10, 25, 50],
-}: {
-  page: number;
-  pageSize: number;
-  total: number;
-  /** Plural label for the rows, e.g. "events". */
-  noun: string;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
-  pageSizes?: number[];
-}) {
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = Math.min(total, page * pageSize);
-
-  return (
-    <div className="flex flex-col gap-3 border-t pt-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground">
-        <label className="flex items-center gap-2">
-          <span className="font-medium text-foreground">Rows per page:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="h-8 rounded-md border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            {pageSizes.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="hidden h-4 w-px bg-border sm:block" />
-        <span>
-          Showing{" "}
-          <span className="font-semibold text-foreground">
-            {from}–{to}
-          </span>{" "}
-          of <span className="font-semibold text-foreground">{total}</span> {noun}
-        </span>
-      </div>
-
-      <nav aria-label="Pagination" className="flex items-center gap-1.5">
-        <button
-          type="button"
-          className={pageButton}
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-          aria-label="Previous page"
-        >
-          <ChevronLeft className="size-4" />
-        </button>
-        {pageItems(page, totalPages).map((p, i) =>
-          p === "gap" ? (
-            <span key={`gap-${i}`} className="px-1 text-muted-foreground">
-              …
-            </span>
-          ) : (
-            <button
-              key={p}
-              type="button"
-              aria-current={p === page ? "page" : undefined}
-              onClick={() => onPageChange(p)}
-              className={cn(
-                pageButton,
-                p === page && "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-            >
-              {p}
-            </button>
-          )
-        )}
-        <button
-          type="button"
-          className={pageButton}
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
-          aria-label="Next page"
-        >
-          <ChevronRight className="size-4" />
-        </button>
-      </nav>
-    </div>
   );
 }

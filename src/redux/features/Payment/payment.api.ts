@@ -9,14 +9,16 @@ export const paymentApi = baseApi.injectEndpoints({
         status,
         page = 1,
         limit = 20,
+        q,
       }: {
         status?: PaymentStatus;
         page?: number;
         limit?: number;
+        q?: string;
       }) => ({
         url: "/api/payments",
         method: "GET",
-        params: { status, page, limit },
+        params: { status, page, limit, q },
       }),
       providesTags: ["RSVP"],
     }),
