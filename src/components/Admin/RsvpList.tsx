@@ -1,14 +1,22 @@
 "use client";
 
+import {
+  FilterPill,
+  TableCard,
+  TableMessage,
+  TablePagination,
+  TableSkeletonRows,
+  TableToolbar,
+} from "@/components/dashboard/DataTable";
 import { PageIntro } from "@/components/dashboard/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusPill, type StatusTone } from "@/components/dashboard/StatusPill";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAllRsvpQuery, useMyRsvpsQuery } from "@/redux/features/Reservation/rsvp.api";
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
-import { CalendarDays, MapPin, Ticket } from "lucide-react";
+import { CalendarDays, CircleCheck, CircleX, Clock, ListFilter, type LucideIcon, MapPin, Ticket } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -22,14 +30,14 @@ type Rsvp = {
   package: { name: string; price: number } | null;
 };
 
-const STATUS: Record<Rsvp["status"], { label: string; className: string }> = {
-  CONFIRMED: { label: "Confirmed", className: "bg-green-500/15 text-green-700 dark:text-green-400" },
-  PENDING: { label: "Awaiting payment", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
+const STATUS: Record<Rsvp["status"], { label: string; tone: StatusTone; icon: LucideIcon }> = {
+  CONFIRMED: { label: "Confirmed", tone: "green", icon: CircleCheck },
+  PENDING: { label: "Awaiting payment", tone: "amber", icon: Clock },
+  CANCELLED: { label: "Cancelled", tone: "muted", icon: CircleX },
 };
 
-const TABS: { label: string; value?: Rsvp["status"] }[] = [
-  { label: "All" },
+const STATUSES: { label: string; value?: Rsvp["status"] }[] = [
+  { label: "All statuses" },
   { label: "Confirmed", value: "CONFIRMED" },
   { label: "Awaiting payment", value: "PENDING" },
 ];
@@ -37,9 +45,9 @@ const TABS: { label: string; value?: Rsvp["status"] }[] = [
 function StatusBadge({ status }: { status: Rsvp["status"] }) {
   const s = STATUS[status];
   return (
-    <Badge variant="outline" className={cn("border-0", s.className)}>
+    <StatusPill tone={s.tone} icon={s.icon}>
       {s.label}
-    </Badge>
+    </StatusPill>
   );
 }
 
@@ -138,8 +146,9 @@ function MyBookings() {
 /** Attendee list for admins (all events) and organizers (their own events). */
 function AttendeeTable({ isAdmin }: { isAdmin: boolean }) {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [status, setStatus] = useState<Rsvp["status"] | undefined>(undefined);
-  const { data, isLoading, isFetching, isError } = useAllRsvpQuery({ page, limit: 15, status });
+  const { data, isLoading, isFetching, isError } = useAllRsvpQuery({ page, limit: pageSize, status });
   const rsvps: Rsvp[] = data?.data ?? [];
 
   return (
@@ -147,92 +156,87 @@ function AttendeeTable({ isAdmin }: { isAdmin: boolean }) {
       <PageIntro
         title={isAdmin ? "All RSVPs" : "Attendees"}
         description={isAdmin ? "Bookings across every event." : "Everyone who has booked your events."}
-        actions={
-          <div className="flex rounded-lg bg-muted p-1">
-            {TABS.map((t) => (
-              <button
-                key={t.label}
-                onClick={() => {
-                  setStatus(t.value);
-                  setPage(1);
-                }}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                  status === t.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        }
       />
-      <Card className="gap-0 overflow-hidden py-0">
-        <div className={cn("overflow-x-auto", isFetching && "opacity-60")}>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr className="text-left text-muted-foreground">
-                <th className="h-11 px-4 font-medium">Attendee</th>
-                <th className="h-11 px-4 font-medium">Event</th>
-                <th className="h-11 px-4 font-medium">Package</th>
-                <th className="h-11 px-4 text-right font-medium">Amount</th>
-                <th className="h-11 px-4 font-medium">Status</th>
-                <th className="h-11 px-4 font-medium">Booked</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-t">
-                    <td colSpan={6} className="p-4">
-                      <Skeleton className="h-8 w-full" />
-                    </td>
-                  </tr>
-                ))
-              ) : isError ? (
-                <tr>
-                  <td colSpan={6} className="p-10 text-center text-destructive">
-                    Failed to load RSVPs.
-                  </td>
-                </tr>
-              ) : rsvps.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-10 text-center text-muted-foreground">
-                    No RSVPs found.
-                  </td>
-                </tr>
-              ) : (
-                rsvps.map((r) => (
-                  <tr key={r.id} className="border-t transition-colors hover:bg-muted/40">
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{r.user?.name || "—"}</p>
-                      <p className="text-xs text-muted-foreground">{r.user?.email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/events/${r.event.id}`} className="hover:underline">
-                        {r.event.title}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">{fmtDate(r.event.date)}</p>
-                    </td>
-                    <td className="px-4 py-3">{r.package?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {r.package ? `BDT ${r.package.price.toLocaleString()}` : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={r.status} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{fmtDate(r.createdAt)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {!isLoading && !isError && (
-          <p className="border-t px-4 py-3 text-xs text-muted-foreground">{data?.meta?.total ?? 0} RSVPs</p>
-        )}
-      </Card>
-      <Pager page={page} totalPages={data?.meta?.totalPages ?? 1} setPage={setPage} />
+      <TableCard
+        fetching={isFetching}
+        toolbar={
+          <TableToolbar>
+            <FilterPill
+              label="Filter by status"
+              icon={ListFilter}
+              options={STATUSES}
+              value={status}
+              onChange={(v) => {
+                setStatus(v);
+                setPage(1);
+              }}
+            />
+          </TableToolbar>
+        }
+        footer={
+          !isLoading &&
+          !isError && (
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={data?.meta?.total ?? 0}
+              noun="RSVPs"
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )
+        }
+      >
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Attendee</TableHead>
+              <TableHead>Event</TableHead>
+              <TableHead>Package</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Booked</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableSkeletonRows cols={6} />
+            ) : isError ? (
+              <TableMessage colSpan={6} error>
+                Failed to load RSVPs.
+              </TableMessage>
+            ) : rsvps.length === 0 ? (
+              <TableMessage colSpan={6}>No RSVPs found.</TableMessage>
+            ) : (
+              rsvps.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>
+                    <p className="font-semibold">{r.user?.name || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{r.user?.email}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/events/${r.event.id}`} className="font-medium hover:underline">
+                      {r.event.title}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{fmtDate(r.event.date)}</p>
+                  </TableCell>
+                  <TableCell>{r.package?.name ?? "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {r.package ? `BDT ${r.package.price.toLocaleString()}` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={r.status} />
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">{fmtDate(r.createdAt)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableCard>
     </div>
   );
 }

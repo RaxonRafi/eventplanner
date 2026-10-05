@@ -1,16 +1,21 @@
 "use client";
 
 import { DeleteConfirmation } from "@/components/DeleteConfirmation";
+import {
+  TableCard,
+  TableMessage,
+  TablePagination,
+  TableSearch,
+  TableSkeletonRows,
+  TableToolbar,
+} from "@/components/dashboard/DataTable";
 import { PageIntro } from "@/components/dashboard/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusPill, type StatusTone } from "@/components/dashboard/StatusPill";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
 import { useAllUsersQuery, useDeleteUserMutation, useUserInfoQuery } from "@/redux/features/User/user.api";
-import { Search, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,10 +27,10 @@ type User = {
   createdAt: string;
 };
 
-const ROLE: Record<User["role"], { label: string; className: string }> = {
-  ADMIN: { label: "Admin", className: "bg-violet-500/15 text-violet-700 dark:text-violet-400" },
-  ORGANIZER: { label: "Organizer", className: "bg-blue-500/15 text-blue-700 dark:text-blue-400" },
-  USER: { label: "Member", className: "bg-muted text-muted-foreground" },
+const ROLE: Record<User["role"], { label: string; tone: StatusTone }> = {
+  ADMIN: { label: "Admin", tone: "violet" },
+  ORGANIZER: { label: "Organizer", tone: "blue" },
+  USER: { label: "Member", tone: "muted" },
 };
 
 const initials = (u: User) =>
@@ -38,16 +43,16 @@ const initials = (u: User) =>
 
 export function UserList() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
   const q = useDebounce(search.trim(), 400);
   useEffect(() => setPage(1), [q]);
 
-  const { data, isLoading, isFetching, isError } = useAllUsersQuery({ page, take: 10, q: q || undefined });
+  const { data, isLoading, isFetching, isError } = useAllUsersQuery({ page, take: pageSize, q: q || undefined });
   const { data: me } = useUserInfoQuery(undefined);
   const [deleteUser] = useDeleteUserMutation();
 
   const users: User[] = data?.data ?? [];
-  const totalPages: number = data?.totalPages ?? 1;
 
   const handleRemove = async (user: User) => {
     const id = toast.loading(`Removing ${user.name || user.email}…`);
@@ -62,125 +67,107 @@ export function UserList() {
 
   return (
     <div className="space-y-6">
-      <PageIntro
-        title="Users"
-        description="Everyone registered on the platform."
-        actions={
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name or email…"
-              className="pl-9"
-              aria-label="Search users"
-            />
-          </div>
+      <PageIntro title="Users" description="Everyone registered on the platform." />
+      <TableCard
+        fetching={isFetching}
+        toolbar={
+          <TableToolbar
+            search={
+              <TableSearch
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name or email…"
+                aria-label="Search users"
+              />
+            }
+          />
         }
-      />
-      <Card className="gap-0 overflow-hidden py-0">
-        <div className={cn("overflow-x-auto", isFetching && "opacity-60")}>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr className="text-left text-muted-foreground">
-                <th className="h-11 px-4 font-medium">User</th>
-                <th className="h-11 px-4 font-medium">Role</th>
-                <th className="h-11 px-4 font-medium">Joined</th>
-                <th className="h-11 px-4 text-right font-medium">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-t">
-                    <td colSpan={4} className="p-4">
-                      <Skeleton className="h-9 w-full" />
-                    </td>
-                  </tr>
-                ))
-              ) : isError ? (
-                <tr>
-                  <td colSpan={4} className="p-10 text-center text-destructive">
-                    Failed to load users.
-                  </td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-10 text-center text-muted-foreground">
-                    No users found.
-                  </td>
-                </tr>
-              ) : (
-                users.map((u) => {
-                  const isMe = u.id === me?.data?.id;
-                  return (
-                    <tr key={u.id} className="border-t transition-colors hover:bg-muted/40">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                            {initials(u)}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">
-                              {u.name || "—"} {isMe && <span className="text-xs text-muted-foreground">(you)</span>}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">{u.email}</p>
-                          </div>
+        footer={
+          !isLoading &&
+          !isError && (
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={data?.total ?? 0}
+              noun="users"
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )
+        }
+      >
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>User</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableSkeletonRows rows={6} cols={4} />
+            ) : isError ? (
+              <TableMessage colSpan={4} error>
+                Failed to load users.
+              </TableMessage>
+            ) : users.length === 0 ? (
+              <TableMessage colSpan={4}>No users found.</TableMessage>
+            ) : (
+              users.map((u) => {
+                const isMe = u.id === me?.data?.id;
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          {initials(u)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">
+                            {u.name || "—"}{" "}
+                            {isMe && <span className="text-xs font-normal text-muted-foreground">(you)</span>}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className={cn("border-0", ROLE[u.role]?.className)}>
-                          {ROLE[u.role]?.label ?? u.role}
-                        </Badge>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                        {new Date(u.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {!isMe && (
-                          <DeleteConfirmation
-                            title={`Remove ${u.name || u.email}?`}
-                            description="Their account and unpaid bookings will be deleted. Users who organize events or have paid bookings can't be removed."
-                            confirmLabel="Remove user"
-                            onConfirm={() => handleRemove(u)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusPill tone={ROLE[u.role]?.tone ?? "muted"}>{ROLE[u.role]?.label ?? u.role}</StatusPill>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {new Date(u.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!isMe && (
+                        <DeleteConfirmation
+                          title={`Remove ${u.name || u.email}?`}
+                          description="Their account and unpaid bookings will be deleted. Users who organize events or have paid bookings can't be removed."
+                          confirmLabel="Remove user"
+                          onConfirm={() => handleRemove(u)}
+                        >
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 rounded-full text-muted-foreground hover:text-destructive"
+                            aria-label={`Remove ${u.name || u.email}`}
                           >
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="size-8 text-muted-foreground hover:text-destructive"
-                              aria-label={`Remove ${u.name || u.email}`}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </DeleteConfirmation>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        {!isLoading && !isError && (
-          <p className="border-t px-4 py-3 text-xs text-muted-foreground">{data?.total ?? 0} users</p>
-        )}
-      </Card>
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <span className="mr-2 text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </Button>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-            Next
-          </Button>
-        </div>
-      )}
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </DeleteConfirmation>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </TableCard>
     </div>
   );
 }

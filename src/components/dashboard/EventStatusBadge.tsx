@@ -1,17 +1,24 @@
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { StatusPill, type StatusTone } from "@/components/dashboard/StatusPill";
+import { CircleCheck, CircleX, Clock, type LucideIcon } from "lucide-react";
 
-const STYLES: Record<string, { label: string; className: string }> = {
-  APPROVED: { label: "Live", className: "bg-green-500/15 text-green-700 dark:text-green-400" },
-  PENDING: { label: "In review", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
-  REJECTED: { label: "Rejected", className: "bg-red-500/15 text-red-700 dark:text-red-400" },
+const STYLES: Record<string, { label: string; tone: StatusTone; icon: LucideIcon }> = {
+  APPROVED: { label: "Live", tone: "green", icon: CircleCheck },
+  PENDING: { label: "In review", tone: "amber", icon: Clock },
+  REJECTED: { label: "Rejected", tone: "red", icon: CircleX },
 };
 
 export function EventStatusBadge({ status, className }: { status: string; className?: string }) {
-  const s = STYLES[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
+  const s = STYLES[status];
+  if (!s) {
+    return (
+      <StatusPill tone="muted" className={className}>
+        {status}
+      </StatusPill>
+    );
+  }
   return (
-    <Badge variant="outline" className={cn("border-0", s.className, className)}>
+    <StatusPill tone={s.tone} icon={s.icon} className={className}>
       {s.label}
-    </Badge>
+    </StatusPill>
   );
 }
